@@ -1,0 +1,101 @@
+                     ┌───────────────────────────────┐
+                     │         FUENTES DE DATO       │
+                     │  (ideas, compromisos, notas)  │
+                     └───────────────┬───────────────┘
+                                     │
+                                     ▼
+      ┌─────────────────────────────────────────────────────────────────────┐
+      │                     CAPA DE ALMACENAMIENTO                          │
+      │                           (Core)                                    │
+      │              SQLite ── tabla layers/steps/checkpoints/history       │
+      │        Formato: filas (SQL) • Propósito: verdad única, transaccional│
+      └───────────────┬─────────────────────┬──────────────────────┬────────┘
+                      │                     │                      │
+                      ▼                     ▼                      ▼
+      ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
+      │     MODELS API       │ │     EXPORT / I/O     │ │  AUTOMATIONS/AGENTS  │
+      │   (aetheryon_k9)     │ │   Markdown / JSON    │ │  (futuro: cron, IA)  │
+      └──────────┬───────────┘ └──────────┬───────────┘ └──────────┬───────────┘
+                 │                        │                        │
+                 ▼                        ▼                        ▼
+      ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
+      │         CLI          │ │         GUI          │ │       BITÁCORA       │
+      │    fusion-k9 ...     │ │   Tkinter (dark      │ │  (narrativa/export)  │
+      │   Formato: texto     │ │   Formato: widgets   │ │   Formato: MD/voz    │
+      │   Uso: velocidad,    │ │   Uso: navegación,   │ │   Uso: relato,       │
+      │   scripting, agentes │ │   foco humano        │ │   reporte,estratégico│
+      └──────────┬───────────┘ └──────────┬───────────┘ └──────────┬───────────┘
+                 │                        │                        │
+                 ▼                        ▼                        ▼
+      ┌──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
+      │      COMANDOS        │ │    CONTROLES GUI     │ │       SALIDAS        │
+      │   open/close         │ │   botones: Nueva     │ │   export.md / JSON   │
+      │   snooze/kill        │ │   Due/Pri/Who        │ │   informes, bitácor  │
+      │   step-add/...       │ │   Checkpoint         │ │   dashboards externo │
+      │   checkpoint         │ │   Doing/Done         │ │                      │
+      └──────────┬───────────┘ └──────────┬───────────┘ └──────────────────────┘
+                 │                        │                        
+                 └──────────┬─────────────┘                        
+                            │
+                            ▼
+      ┌──────────────────────────────────────────────────┐
+      │               ESTADOS DE PROGRESO                │
+      ├──────────────────────┬───────────────────────────┤
+      │     CHECKPOINTS      │          STEPS            │
+      │   msg + versión      │     idx, estado           │
+      │   (memoria viva)     │◀────────────────────────▶│
+      │                      │     progreso (%)          │
+      └──────────────────────┴───────────────────────────┘
+
+
+
+      ----------------------------------------------------------------------------------------
+
+
+┌───────────────────────────────┐
+│      ENTRADA DEL USUARIO      │
+│(Ruta del Proyecto, URL Clonar,│
+│ Acciones Git, Nombre Repo GH) │
+└───────────────┬───────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     ESTADO DE LA APLICACIÓN                         │
+│                           (AppState)                                │
+│        Proyecto: Clase Proyecto (path, repo)                        │
+│        archivos_data: {indice_fila: ruta_relativa}                  │
+└───────────────┬─────────────────────┬──────────────────────┬────────┘
+                │                     │                      │
+                ▼                     ▼                      ▼
+┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+│     CLASE PROYECTO   │  │   OPERACIONES FLET   │  │   SISTEMA (OS/GH CLI)│
+│  (gitpython)         │  │   (UI, Dialogs)      │  │    (VS Code, GitHub) │
+└──────────┬───────────┘  └──────────┬───────────┘  └──────────┬───────────┘
+           │                         │                         │
+           ▼                         ▼                         ▼
+┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+│  MÉTODOS GIT         │  │   ACTUALIZAR UI      │  │  EJECUTAR COMANDOS   │
+│  (init, clone, add,  │  │   (actualizar_rama,  │  │  (abrir VS Code,     │
+│   commit, push, pull,│  │    ver_archivos,     │  │   crear repo GH)     │
+│   status, log, etc.) │  │    show_dialog,      │  │                      │
+│                      │  │    show_snack)       │  │                      │
+└──────────┬───────────┘  └──────────┬───────────┘  └──────────┬───────────┘
+           │                         │                         │
+           ▼                         ▼                         ▼
+┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+│   REPOSITORIO GIT    │  │    INTERACCIÓN       │  │    ACCIONES EXTERNAS │
+│   (archivos, commits,│  │    CON EL USUARIO    │  │    (VS Code, GitHub) │
+│    ramas, estado)    │  │    (mensajes,        │  │                      │
+│                      │  │     alertas)         │  │                      │
+└──────────┬───────────┘  └──────────────────────┘  └──────────────────────┘
+           │                         
+           │                         
+           ▼                         
+┌──────────────────────────────────────────────────┐
+│               ESTADO DE LOS ARCHIVOS             │
+├──────────────────────┬───────────────────────────┤
+│     ARCHIVOS         │          ESTADO           │
+│   (ruta relativa)    │  (untracked, modified,    │
+│                      │   staged, committed,      │
+│                      │  sin cambios, desconocido)│
+└──────────────────────┴───────────────────────────┘
