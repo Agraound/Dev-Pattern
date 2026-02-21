@@ -49,10 +49,7 @@ El patrón en este nivel permite validar los siguientes modos:
 - CLI Mode → Ejecución interactiva por comandos.
 - Batch Mode → Automatización por parámetros (--flags).
 - UI Mode → Orquestación profesional mediante interfaz gráfica.
-
-Flujo de dependencias conceptual:
-Interfaces → Application → Domain.
-Infrastructure depende de contratos del Domain, pero Domain nunca depende de Infrastructure.
+  
 
 ### Ejemplo: Standalone Script con todos los modos
 
@@ -439,6 +436,11 @@ proyecto/
 
 ## Nivel 3 — Patrón AUDI
 Arquitectura por capas fundamentales.
+
+Flujo de dependencias conceptual:
+Interfaces → Application → Domain.
+Infrastructure depende de contratos del Domain, pero Domain nunca depende de Infrastructure.
+
 
 ### Cuándo escalar al Nivel 4
 Escalar cuando el equipo necesite pruebas automatizadas, cuando haya scripts de migración o seed data recurrentes, o cuando la documentación interna se vuelva necesaria para onboarding.
