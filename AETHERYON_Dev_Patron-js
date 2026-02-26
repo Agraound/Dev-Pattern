@@ -1,7 +1,73 @@
-Aquí tienes una versión para desarrollo JavaScript/Node.js del patrón AETHERYON, manteniendo la misma estructura progresiva y principios arquitectónicos.
-
-```markdown
 # AETHERYON Dev Pattern — JavaScript/Node.js
+
+---
+
+## ¿En qué nivel estoy? (Guía rápida)
+
+Si tu proyecto…
+
+- **Es un script que tú solo usarás** → Nivel 1
+- **Tiene UI/CLI separada pero dominio simple** → Nivel 2
+- **Tiene reglas de negocio claras y crecerá** → Nivel 3
+- **Está en producción y requiere calidad y equipo** → Nivel 4
+- **Tiene UI compleja con mucho estado** → Nivel 5
+
+---
+
+## Marco Estratégico
+
+### ¿Qué problema resuelve AETHERYON?
+
+Todo proyecto empieza simple.
+
+Si crece sin estructura, colapsa.
+
+AETHERYON resuelve el problema de **cómo evolucionar desde un script hasta un sistema profesional sin reescribirlo cada vez**.
+
+No es una arquitectura fija.  
+Es un **camino evolutivo con niveles claros**.
+
+### ¿Qué significa escalar?
+
+Escalar no es hacer más grande.
+
+Es **agregar estructura cuando el costo del desorden supera el costo de la estructura**.
+
+Cada transición agrega:
+
+- Separación de responsabilidades
+- Testeabilidad
+- Coordinación en equipo
+- Seguridad evolutiva
+
+Pero también complejidad.
+
+---
+
+### Frase ancla
+
+> **"Construye para hoy. Prepara para mañana. Nunca pagues por adelantado lo que puedas diferir con conciencia."**
+
+---
+
+## Línea Evolutiva Visual
+
+```
+Nivel 1         →    Nivel 2         →    Nivel 3         →    Nivel 4           →    Nivel 5
+Script único    →    Separación      →    Capas limpias   →    Producto           →    UI estructurada
+(prototipo)          básica                (Domain/App)         profesional            (MVVM)
+     │                   │                      │                    │                      │
+     ▼                   ▼                      ▼                    ▼                      ▼
+ 200 líneas        Lógica/UI           Domain puro          80% cobertura        ViewModels
+                  separados            sin I/O               tests                testeables
+```
+
+### Transiciones Arquitectónicas
+
+- **T1 — Separación por claridad** (Nivel 1 → Nivel 2)
+- **T2 — Separación por dominio** (Nivel 2 → Nivel 3)
+- **T3 — Separación por calidad** (Nivel 3 → Nivel 4)
+- **T4 — Separación por experiencia de usuario** (Nivel 4 → Nivel 5)
 
 ---
 
@@ -18,26 +84,34 @@ Aquí tienes una versión para desarrollo JavaScript/Node.js del patrón AETHERY
 ---
 
 ## Nivel 1 — Standalone Script
-Proyecto desarrollado en un único script completamente funcional.
 
-### Cuándo escalar al Nivel 2
-Escalar cuando el script supere las 200 líneas, cuando la lógica de negocio y la presentación se mezclen en las mismas funciones, o cuando otro desarrollador necesite trabajar en paralelo.
+Si estás empezando algo hoy, probablemente estés aquí.
+
+Un solo archivo. Sin carpetas. Sin arquitectura.
+
+**Es válido.**
+
+### ⚠ Señal de transición (T1 — Separación por claridad)
+
+Si tu script supera las 200 líneas, si empiezas a copiar y pegar bloques, o si otro desarrollador necesita trabajar en paralelo, es momento de escalar a Nivel 2.
 
 ### Principios del Nivel 1
+
 - Todo en un solo archivo es aceptable mientras el alcance sea claro.
-- Preferir funciones puras y evitar estado global innecesario.
+- Preferir funciones puras. Evitar estado global innecesario.
 - Documentar la intención del script al inicio del archivo.
 
-### Antipatrones a evitar
+### Antipatrón fundamental
+
 ```javascript
 // ❌ MAL — lógica mezclada con presentación
 function calcularDescuento(precio, porcentaje) {
     const resultado = precio - (precio * porcentaje / 100);
-    console.log(`Descuento aplicado: ${resultado}`); // mezcla cálculo con output
+    console.log(`Descuento aplicado: ${resultado}`); // MEZCLA
     return resultado;
 }
 
-// ✅ BIEN — responsabilidades separadas aunque estén en el mismo archivo
+// ✅ BIEN — responsabilidades separadas (mismo archivo)
 function calcularDescuento(precio, porcentaje) {
     return precio - (precio * porcentaje / 100);
 }
@@ -47,256 +121,129 @@ function mostrarResultado(resultado) {
 }
 ```
 
-### Modos Operativos del Sistema
+### Ejemplo 1: Versión ultra mínima
 
-- Script Mode → Validación rápida y prototipo funcional.
-- CLI Mode → Ejecución interactiva por comandos.
-- Batch Mode → Automatización por parámetros (--flags).
-- UI Mode → Orquestación profesional mediante interfaz gráfica.
+```javascript
+#!/usr/bin/env node
+// calculadora.js — lo mínimo que funciona
 
-### Ejemplo: Standalone Script con todos los modos
+function sumar(a, b) { return a + b; }
+function restar(a, b) { return a - b; }
+
+const args = process.argv.slice(2);
+const op = args[0];
+const a = parseFloat(args[1]);
+const b = parseFloat(args[2]);
+
+if (op === 'sumar') console.log(sumar(a, b));
+if (op === 'restar') console.log(restar(a, b));
+```
+
+Este script es válido. Hace su trabajo.
+
+Pero cuando necesites más comandos, validaciones o modos…
+
+### Ejemplo 2: Versión evolucionada (multi-modo)
 
 ```javascript
 #!/usr/bin/env node
 /**
- * proyecto.js - Script único con múltiples modos operativos
+ * calculadora-evolucionada.js — misma esencia, más capacidades
  */
 
-const fs = require('fs').promises;
-const path = require('path');
 const { program } = require('commander');
-const readline = require('readline');
 
-// ==================== DOMAIN ====================
-const TipoUsuario = {
-    ADMIN: 'admin',
-    USUARIO: 'usuario',
-    INVITADO: 'invitado'
-};
-
-class Usuario {
-    constructor(id, nombre, email, tipo, activo = true) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.tipo = tipo;
-        this.activo = activo;
-    }
-
-    cambiarEmail(nuevoEmail) {
-        if (!nuevoEmail.includes('@')) {
-            throw new Error('Email inválido: debe contener @');
-        }
-        this.email = nuevoEmail;
-    }
-
-    desactivar() {
-        this.activo = false;
-    }
+// ===== DOMAIN ===== (lógica pura)
+function sumar(a, b) { return a + b; }
+function restar(a, b) { return a - b; }
+function multiplicar(a, b) { return a * b; }
+function dividir(a, b) {
+    if (b === 0) throw new Error('No se puede dividir por cero');
+    return a / b;
 }
 
-// ==================== APPLICATION ====================
-class ServicioUsuario {
-    constructor() {
-        this._usuarios = [];
-        this._nextId = 1;
-    }
+// ===== CLI ===== (interacción)
+program
+    .version('1.0.0')
+    .description('Calculadora con múltiples modos');
 
-    crearUsuario(nombre, email, tipo) {
-        if (!nombre || nombre.length < 3) {
-            throw new Error('Nombre debe tener al menos 3 caracteres');
-        }
-        if (!email || !email.includes('@')) {
-            throw new Error('Email inválido');
-        }
-        const usuario = new Usuario(this._nextId++, nombre, email, tipo);
-        this._usuarios.push(usuario);
-        console.log(`Usuario creado: ${usuario.nombre} (ID: ${usuario.id})`);
-        return usuario;
-    }
-
-    listarUsuarios(soloActivos = false) {
-        if (soloActivos) {
-            return this._usuarios.filter(u => u.activo);
-        }
-        return [...this._usuarios];
-    }
-
-    obtenerUsuario(usuarioId) {
-        return this._usuarios.find(u => u.id === usuarioId);
-    }
-
-    eliminarUsuario(usuarioId) {
-        const usuario = this.obtenerUsuario(usuarioId);
-        if (usuario) {
-            usuario.desactivar();
-            return true;
-        }
-        return false;
-    }
-}
-
-// ==================== INTERFACES ====================
-class CLI {
-    constructor(servicio) {
-        this.servicio = servicio;
-    }
-
-    ejecutar(options) {
-        const comandos = {
-            'crear': this._crear.bind(this),
-            'listar': this._listar.bind(this),
-            'obtener': this._obtener.bind(this),
-            'eliminar': this._eliminar.bind(this)
-        };
-
-        if (comandos[options.comando]) {
-            comandos[options.comando](options);
-        }
-    }
-
-    _crear(options) {
+program
+    .command('operar <tipo> <a> <b>')
+    .action((tipo, a, b) => {
+        const numA = parseFloat(a);
+        const numB = parseFloat(b);
+        
         try {
-            const usuario = this.servicio.crearUsuario(
-                options.nombre,
-                options.email,
-                options.tipo
-            );
-            console.log(`✅ Usuario creado: ${usuario.nombre} (ID: ${usuario.id})`);
+            let resultado;
+            switch(tipo) {
+                case 'sumar': resultado = sumar(numA, numB); break;
+                case 'restar': resultado = restar(numA, numB); break;
+                case 'multiplicar': resultado = multiplicar(numA, numB); break;
+                case 'dividir': resultado = dividir(numA, numB); break;
+                default: throw new Error('Operación no válida');
+            }
+            console.log(`✅ Resultado: ${resultado}`);
         } catch (error) {
             console.log(`❌ Error: ${error.message}`);
         }
-    }
+    });
 
-    _listar(options) {
-        const usuarios = this.servicio.listarUsuarios(options.soloActivos);
-        if (usuarios.length === 0) {
-            console.log('No hay usuarios');
-            return;
-        }
-        
-        console.log('\nID    NOMBRE                EMAIL                      TIPO       ESTADO');
-        console.log('-'.repeat(70));
-        
-        usuarios.forEach(u => {
-            const estado = u.activo ? 'ACTIVO' : 'INACTIVO';
-            console.log(`${u.id.toString().padEnd(4)} ${u.nombre.padEnd(20)} ${u.email.padEnd(25)} ${u.tipo.padEnd(10)} ${estado}`);
-        });
-    }
-
-    _obtener(options) {
-        const usuario = this.servicio.obtenerUsuario(parseInt(options.id));
-        if (usuario) {
-            console.log(`\nID: ${usuario.id}\nNombre: ${usuario.nombre}\nEmail: ${usuario.email}`);
-        } else {
-            console.log(`❌ Usuario con ID ${options.id} no encontrado`);
-        }
-    }
-
-    _eliminar(options) {
-        if (this.servicio.eliminarUsuario(parseInt(options.id))) {
-            console.log(`✅ Usuario ${options.id} desactivado`);
-        } else {
-            console.log(`❌ Usuario con ID ${options.id} no encontrado`);
-        }
-    }
-}
-
-// ==================== MAIN ====================
-async function main() {
-    program
-        .version('1.0.0')
-        .description('Sistema de Gestión de Usuarios');
-
-    program
-        .command('crear <nombre> <email> <tipo>')
-        .action((nombre, email, tipo) => {
-            const servicio = new ServicioUsuario();
-            new CLI(servicio).ejecutar({ comando: 'crear', nombre, email, tipo });
-        });
-
-    program
-        .command('listar')
-        .option('-a, --solo-activos', 'Mostrar solo usuarios activos')
-        .action((options) => {
-            const servicio = new ServicioUsuario();
-            new CLI(servicio).ejecutar({ comando: 'listar', soloActivos: options.soloActivos });
-        });
-
-    program
-        .command('obtener <id>')
-        .action((id) => {
-            const servicio = new ServicioUsuario();
-            new CLI(servicio).ejecutar({ comando: 'obtener', id });
-        });
-
-    program
-        .command('eliminar <id>')
-        .action((id) => {
-            const servicio = new ServicioUsuario();
-            new CLI(servicio).ejecutar({ comando: 'eliminar', id });
-        });
-
-    await program.parseAsync(process.argv);
-}
-
-if (require.main === module) {
-    main().catch(console.error);
-}
+program.parse(process.argv);
 ```
 
-### package.json mínimo
-```json
-{
-  "name": "proyecto",
-  "version": "1.0.0",
-  "description": "Script único con múltiples modos operativos",
-  "main": "proyecto.js",
-  "bin": {
-    "proyecto": "./proyecto.js"
-  },
-  "dependencies": {
-    "commander": "^11.0.0"
-  }
-}
-```
-
-### Ejemplo de uso
-
-```bash
-node proyecto.js crear "Juan Pérez" "juan@email.com" admin
-node proyecto.js listar
-node proyecto.js listar --solo-activos
-node proyecto.js obtener 1
-node proyecto.js eliminar 1
-```
-
-### Estructura
-
-```
-proyecto/
-│
-├── package.json
-└── proyecto.js
-```
+**La progresión es clara:** la lógica de negocio (sumar, restar) sigue siendo la misma. Solo se ha envuelto en más capacidades de interacción.
 
 ---
 
 ## Nivel 2 — Patrón BF (Backend–Frontend)
-Separación básica entre lógica y presentación.
 
-### Cuándo escalar al Nivel 3
-Escalar cuando aparezcan múltiples entidades de negocio con reglas propias, cuando Infrastructure comience a crecer (base de datos, APIs externas), o cuando el equipo crezca y la separación en dos archivos ya no alcance para dividir el trabajo.
+### El primer acto de disciplina
+
+Aquí ocurre un cambio mental fundamental: **separar responsabilidades no por conveniencia, sino por contrato.**
+
+El Backend expone una API pública. El Frontend la consume sin conocer su implementación.
+
+### Frase clave
+
+> **"Aquí comienza el pensamiento en contratos. Aquí empieza la disciplina de desacoplamiento."**
+
+### Estructura
+
+```
+backend.js  ←  Contrato explícito (API pública)
+     ↑
+     │ (solo consume)
+     ↓
+cli.js      ←  Interacción con usuario
+```
+
+### ⚠ Señal de transición (T2 — Separación por dominio)
+
+Si aparecen múltiples entidades de negocio con reglas propias, si Infrastructure comienza a crecer (base de datos, APIs externas), o si el equipo crece y dos archivos ya no alcanzan para dividir el trabajo, escala a Nivel 3.
 
 ### Principios del Nivel 2
-- `backend.js` contiene toda la lógica de negocio y acceso a datos.
-- `frontend.js` (o `cli.js`/`ui.js`) solo consume métodos públicos del backend.
-- El frontend nunca importa librerías de acceso a datos directamente.
 
-### Antipatrones a evitar
+- `backend.js` contiene toda la lógica de negocio y acceso a datos.
+- `frontend.js` (o `cli.js`) solo consume métodos públicos del backend.
+- El frontend nunca importa librerías de acceso a datos directamente.
+- El backend no escribe en consola ni interactúa con el usuario.
+
+### Contrato explícito
+
+```javascript
+// backend.js
+class Backend {
+    async obtenerUsuarios() {} // ← Contrato público
+    async crearUsuario(datos) {} // ← Contrato público
+}
+
+module.exports = Backend;
+```
+
+### Antipatrón a evitar
+
 ```javascript
 // ❌ MAL — el frontend accede directamente a la base de datos
-// En frontend.js
 const sqlite3 = require('sqlite3');
 const db = new sqlite3.Database('db.sqlite');
 db.all('SELECT * FROM usuarios', (err, rows) => {
@@ -304,324 +251,76 @@ db.all('SELECT * FROM usuarios', (err, rows) => {
 });
 
 // ✅ BIEN — el frontend delega al backend
-// En frontend.js
 const Backend = require('./backend');
 const backend = new Backend();
 const usuarios = await backend.obtenerUsuarios();
 ```
 
-### Ejemplo: Backend-Frontend con readline-sync (CLI)
-
-**backend.js**
-```javascript
-/**
- * backend.js - Lógica de negocio y persistencia
- * Independiente de la interfaz de usuario
- */
-
-const fs = require('fs').promises;
-const path = require('path');
-
-class Tarea {
-    constructor(id, titulo, descripcion = '', completada = false, fechaCreacion = null) {
-        this.id = id;
-        this.titulo = titulo;
-        this.descripcion = descripcion;
-        this.completada = completada;
-        this.fechaCreacion = fechaCreacion || new Date().toISOString();
-    }
-}
-
-class GestorTareas {
-    constructor() {
-        this._tareas = [];
-        this._nextId = 1;
-    }
-
-    agregar(titulo, descripcion = '') {
-        if (!titulo || titulo.trim().length === 0) {
-            throw new Error('El título no puede estar vacío');
-        }
-        const tarea = new Tarea(this._nextId++, titulo.trim(), descripcion);
-        this._tareas.push(tarea);
-        return tarea;
-    }
-
-    completar(tareaId) {
-        const tarea = this._obtenerPorId(tareaId);
-        if (tarea) {
-            tarea.completada = !tarea.completada;
-            return true;
-        }
-        return false;
-    }
-
-    eliminar(tareaId) {
-        const index = this._tareas.findIndex(t => t.id === tareaId);
-        if (index !== -1) {
-            this._tareas.splice(index, 1);
-            return true;
-        }
-        return false;
-    }
-
-    buscar(texto) {
-        const textoLower = texto.toLowerCase();
-        return this._tareas.filter(t => 
-            t.titulo.toLowerCase().includes(textoLower) ||
-            t.descripcion.toLowerCase().includes(textoLower)
-        );
-    }
-
-    obtenerTodas() { return [...this._tareas]; }
-    obtenerPendientes() { return this._tareas.filter(t => !t.completada); }
-    obtenerCompletadas() { return this._tareas.filter(t => t.completada); }
-    
-    _obtenerPorId(tareaId) {
-        return this._tareas.find(t => t.id === tareaId);
-    }
-
-    estadisticas() {
-        const total = this._tareas.length;
-        const completadas = this._tareas.filter(t => t.completada).length;
-        return {
-            total,
-            completadas,
-            pendientes: total - completadas,
-            porcentajeCompletado: total > 0 ? (completadas / total * 100) : 0
-        };
-    }
-}
-
-class Backend {
-    constructor() {
-        this.gestor = new GestorTareas();
-    }
-
-    obtenerTareas(filtro = 'todas') {
-        const filtros = {
-            'todas': this.gestor.obtenerTodas.bind(this.gestor),
-            'pendientes': this.gestor.obtenerPendientes.bind(this.gestor),
-            'completadas': this.gestor.obtenerCompletadas.bind(this.gestor)
-        };
-        return (filtros[filtro] || filtros['todas'])();
-    }
-
-    crearTarea(titulo, descripcion = '') {
-        return this.gestor.agregar(titulo, descripcion);
-    }
-
-    toggleTarea(tareaId) {
-        return this.gestor.completar(tareaId);
-    }
-
-    borrarTarea(tareaId) {
-        return this.gestor.eliminar(tareaId);
-    }
-
-    buscarTareas(texto) {
-        return this.gestor.buscar(texto);
-    }
-
-    obtenerEstadisticas() {
-        return this.gestor.estadisticas();
-    }
-}
-
-module.exports = Backend;
-```
-
-**cli.js**
-```javascript
-#!/usr/bin/env node
-/**
- * cli.js - Interfaz de línea de comandos
- * Consume la API del backend sin conocer implementación interna
- */
-
-const readline = require('readline');
-const Backend = require('./backend');
-
-class AplicacionTareas {
-    constructor() {
-        this.backend = new Backend();
-        this.rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-    }
-
-    async iniciar() {
-        console.log('\n📋 GESTOR DE TAREAS');
-        await this._mostrarMenu();
-    }
-
-    async _mostrarMenu() {
-        while (true) {
-            console.log('\n' + '-'.repeat(40));
-            console.log('1. Ver todas las tareas');
-            console.log('2. Agregar tarea');
-            console.log('3. Completar/Descompletar tarea');
-            console.log('4. Eliminar tarea');
-            console.log('5. Buscar tareas');
-            console.log('6. Ver estadísticas');
-            console.log('0. Salir');
-            
-            const opcion = await this._pregunta('Selecciona una opción: ');
-            
-            switch (opcion) {
-                case '1': await this._verTareas(); break;
-                case '2': await this._agregarTarea(); break;
-                case '3': await this._toggleTarea(); break;
-                case '4': await this._eliminarTarea(); break;
-                case '5': await this._buscarTareas(); break;
-                case '6': await this._verEstadisticas(); break;
-                case '0': 
-                    this.rl.close();
-                    return;
-                default:
-                    console.log('❌ Opción no válida');
-            }
-        }
-    }
-
-    async _verTareas() {
-        const tareas = this.backend.obtenerTareas();
-        this._mostrarTareas(tareas);
-    }
-
-    async _agregarTarea() {
-        const titulo = await this._pregunta('Título: ');
-        if (!titulo.trim()) {
-            console.log('❌ El título es obligatorio');
-            return;
-        }
-        const descripcion = await this._pregunta('Descripción (opcional): ');
-        this.backend.crearTarea(titulo, descripcion);
-        console.log('✅ Tarea agregada');
-    }
-
-    async _toggleTarea() {
-        const tareas = this.backend.obtenerTareas('pendientes');
-        this._mostrarTareas(tareas);
-        if (tareas.length === 0) return;
-        
-        const id = await this._pregunta('ID de la tarea a completar: ');
-        if (this.backend.toggleTarea(parseInt(id))) {
-            console.log('✅ Estado actualizado');
-        } else {
-            console.log('❌ Tarea no encontrada');
-        }
-    }
-
-    async _eliminarTarea() {
-        const tareas = this.backend.obtenerTareas();
-        this._mostrarTareas(tareas);
-        if (tareas.length === 0) return;
-        
-        const id = await this._pregunta('ID de la tarea a eliminar: ');
-        if (this.backend.borrarTarea(parseInt(id))) {
-            console.log('✅ Tarea eliminada');
-        } else {
-            console.log('❌ Tarea no encontrada');
-        }
-    }
-
-    async _buscarTareas() {
-        const texto = await this._pregunta('Texto a buscar: ');
-        const tareas = this.backend.buscarTareas(texto);
-        this._mostrarTareas(tareas);
-    }
-
-    async _verEstadisticas() {
-        const stats = this.backend.obtenerEstadisticas();
-        console.log('\n📊 ESTADÍSTICAS');
-        console.log(`Total: ${stats.total}`);
-        console.log(`✅ Completadas: ${stats.completadas}`);
-        console.log(`⏳ Pendientes: ${stats.pendientes}`);
-        console.log(`Porcentaje: ${stats.porcentajeCompletado.toFixed(1)}%`);
-    }
-
-    _mostrarTareas(tareas) {
-        if (tareas.length === 0) {
-            console.log('No hay tareas');
-            return;
-        }
-        console.log('\n' + '-'.repeat(60));
-        console.log('ID'.padEnd(4) + 'ESTADO'.padEnd(12) + 'TÍTULO');
-        tareas.forEach(t => {
-            const estado = t.completada ? '✅ COMPLETADA' : '⏳ PENDIENTE';
-            console.log(`${t.id.toString().padEnd(4)} ${estado.padEnd(12)} ${t.titulo}`);
-            if (t.descripcion) {
-                console.log(`    📝 ${t.descripcion}`);
-            }
-        });
-    }
-
-    _pregunta(query) {
-        return new Promise(resolve => this.rl.question(query, resolve));
-    }
-}
-
-if (require.main === module) {
-    const app = new AplicacionTareas();
-    app.iniciar().catch(console.error);
-}
-```
-
-### package.json
-```json
-{
-  "name": "gestor-tareas",
-  "version": "1.0.0",
-  "description": "Gestor de tareas con separación backend/frontend",
-  "main": "cli.js",
-  "scripts": {
-    "start": "node cli.js"
-  },
-  "bin": {
-    "tareas": "./cli.js"
-  }
-}
-```
-
-### Estructura
-
-```
-proyecto/
-│
-├── package.json
-├── backend.js
-└── cli.js
-```
-
 ---
 
 ## Nivel 3 — Patrón AUDI
-Arquitectura por capas fundamentales.
 
-### Cuándo escalar al Nivel 4
-Escalar cuando el equipo necesite pruebas automatizadas, cuando haya scripts de migración o seed data recurrentes, o cuando la documentación interna se vuelva necesaria para onboarding.
+### La arquitectura por capas
 
-### Diagrama de Dependencias
+Aquí ocurre la segunda gran disciplina: **separar el dominio del mundo exterior.**
+
+Domain es el corazón del negocio. No sabe de bases de datos, ni de APIs, ni de interfaces de usuario. Es puro, testeable, expresivo.
+
+### Regla nuclear (destacada)
+
+> **Si el Domain necesita importar algo externo, la arquitectura está rota.**
+
+### Jerarquía visual
 
 ```
-User_Interface
-      │
-      ▼
- Application  ←──────────────────┐
-      │                          │
-      ▼                          │
-   Domain               Infrastructure
-  (núcleo puro,            (I/O, DB, APIs)
- sin dependencias)
+    ┌─────────────────┐
+    │    Domain       │  ← Puro. Sin imports externos.
+    │  (entidades)    │    Solo lógica de negocio.
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │  Application    │  ← Orquesta casos de uso.
+    │  (servicios)    │    Depende solo de Domain.
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Infrastructure  │  ← Implementa contratos.
+    │   (DB, APIs)    │    Depende de Application y Domain.
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ User Interface  │  ← Consume Application.
+    │   (CLI, GUI)    │    Nunca Infrastructure directo.
+    └─────────────────┘
 ```
+
+### Puerto explícito (Contrato)
+
+```javascript
+// Application/ports/RepositorioUsuario.js
+export class RepositorioUsuario {
+    async obtenerPorId(id) {
+        throw new Error('No implementado'); // ← Contrato
+    }
+}
+```
+
+Infrastructure implementa el contrato.  
+Application depende del contrato, no de la implementación concreta.  
+Domain no depende de nadie.
+
+### ⚠ Señal de transición (T3 — Separación por calidad)
+
+Si el equipo necesita pruebas automatizadas, si hay scripts de migración o seed data recurrentes, o si la documentación interna se vuelve necesaria para onboarding, escala a Nivel 4.
 
 ### Asincronía en AUDI
 
 ```javascript
 // Infrastructure — async para I/O
-class RepositorioUsuarioSQL {
+export class RepositorioUsuarioSQL {
     async obtenerPorId(id) {
         const db = await this._getConnection();
         return db.get('SELECT * FROM usuarios WHERE id = ?', id);
@@ -629,7 +328,7 @@ class RepositorioUsuarioSQL {
 }
 
 // Application — propaga async según necesidad
-class ServicioUsuario {
+export class ServicioUsuario {
     async obtenerUsuario(id) {
         const usuario = await this.repositorio.obtenerPorId(id);
         return UsuarioDTO.desdeEntidad(usuario);
@@ -637,7 +336,7 @@ class ServicioUsuario {
 }
 
 // Domain — siempre sync (lógica pura, sin I/O)
-class Usuario {
+export class Usuario {
     aplicarDescuento(porcentaje) {
         if (porcentaje < 0 || porcentaje > 100) {
             throw new Error(`Descuento inválido: ${porcentaje}`);
@@ -647,514 +346,62 @@ class Usuario {
 }
 ```
 
-### Ejemplo: Sistema de Reservas con Capas AUDI
-
-**package.json**
-```json
-{
-  "name": "sistema-reservas",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node bootstrap.js",
-    "dev": "node --watch bootstrap.js"
-  },
-  "dependencies": {
-    "better-sqlite3": "^9.0.0",
-    "dotenv": "^16.0.0",
-    "winston": "^3.8.0"
-  },
-  "devDependencies": {
-    "jest": "^29.0.0"
-  }
-}
-```
-
-**Domain/entidades/reserva.js**
-```javascript
-// Domain/entidades/reserva.js - Entidades y reglas de negocio
-
-export const EstadoReserva = {
-    PENDIENTE: 'pendiente',
-    CONFIRMADA: 'confirmada',
-    CANCELADA: 'cancelada',
-    COMPLETADA: 'completada'
-};
-
-export const TipoHabitacion = {
-    INDIVIDUAL: 'individual',
-    DOBLE: 'doble',
-    SUITE: 'suite'
-};
-
-export class Cliente {
-    constructor(id, nombre, email, telefono) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.telefono = telefono;
-    }
-
-    validarEmail() {
-        return this.email.includes('@') && this.email.includes('.');
-    }
-
-    validarTelefono() {
-        return this.telefono.length >= 9 && /^\d+$/.test(this.telefono);
-    }
-}
-
-export class Habitacion {
-    constructor(id, numero, tipo, precioNoche, disponible = true) {
-        this.id = id;
-        this.numero = numero;
-        this.tipo = tipo;
-        this.precioNoche = precioNoche;
-        this.disponible = disponible;
-    }
-
-    calcularPrecio(noches) {
-        let precioBase = this.precioNoche * noches;
-        if (noches > 7) {
-            precioBase *= 0.9; // 10% descuento por estancia larga
-        }
-        return precioBase;
-    }
-}
-
-export class Reserva {
-    constructor(id, clienteId, habitacionId, fechaInicio, fechaFin, 
-                estado = EstadoReserva.PENDIENTE, fechaCreacion = null) {
-        this.id = id;
-        this.clienteId = clienteId;
-        this.habitacionId = habitacionId;
-        this.fechaInicio = new Date(fechaInicio);
-        this.fechaFin = new Date(fechaFin);
-        this.estado = estado;
-        this.fechaCreacion = fechaCreacion || new Date();
-    }
-
-    get noches() {
-        const diff = this.fechaFin - this.fechaInicio;
-        return Math.ceil(diff / (1000 * 60 * 60 * 24));
-    }
-
-    confirmar() {
-        if (this.estado !== EstadoReserva.PENDIENTE) {
-            throw new Error('Solo se pueden confirmar reservas pendientes');
-        }
-        this.estado = EstadoReserva.CONFIRMADA;
-    }
-
-    cancelar() {
-        if (this.estado === EstadoReserva.COMPLETADA) {
-            throw new Error('No se puede cancelar una reserva completada');
-        }
-        this.estado = EstadoReserva.CANCELADA;
-    }
-
-    solapaCon(otra) {
-        return !(this.fechaFin <= otra.fechaInicio || this.fechaInicio >= otra.fechaFin);
-    }
-}
-```
-
-**Domain/excepciones/excepcionesDominio.js**
-```javascript
-// Domain/excepciones/excepcionesDominio.js
-
-export class ErrorDominio extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'ErrorDominio';
-    }
-}
-
-export class ClienteNoEncontrado extends ErrorDominio {
-    constructor(clienteId) {
-        super(`Cliente con ID ${clienteId} no encontrado`);
-        this.name = 'ClienteNoEncontrado';
-    }
-}
-
-export class HabitacionNoDisponible extends ErrorDominio {
-    constructor(habitacionId, fechaInicio, fechaFin) {
-        super(`Habitación ${habitacionId} no disponible entre ${fechaInicio} y ${fechaFin}`);
-        this.name = 'HabitacionNoDisponible';
-    }
-}
-
-export class FechasInvalidas extends ErrorDominio {
-    constructor() {
-        super('La fecha de fin debe ser posterior a la fecha de inicio');
-        this.name = 'FechasInvalidas';
-    }
-}
-```
-
-**Application/interfaces/repositorios.js**
-```javascript
-// Application/interfaces/repositorios.js
-
-export class RepositorioCliente {
-    async obtenerPorId(clienteId) { throw new Error('Not implemented'); }
-    async guardar(cliente) { throw new Error('Not implemented'); }
-    async listar() { throw new Error('Not implemented'); }
-}
-
-export class RepositorioHabitacion {
-    async obtenerPorId(habitacionId) { throw new Error('Not implemented'); }
-    async listarDisponibles(fechaInicio, fechaFin) { throw new Error('Not implemented'); }
-    async guardar(habitacion) { throw new Error('Not implemented'); }
-}
-
-export class RepositorioReserva {
-    async obtenerPorId(reservaId) { throw new Error('Not implemented'); }
-    async obtenerPorHabitacion(habitacionId, fechaInicio, fechaFin) { throw new Error('Not implemented'); }
-    async guardar(reserva) { throw new Error('Not implemented'); }
-    async actualizarEstado(reservaId, nuevoEstado) { throw new Error('Not implemented'); }
-}
-```
-
-**Application/dto/reservaDto.js**
-```javascript
-// Application/dto/reservaDto.js
-
-export class SolicitudReservaDTO {
-    constructor(clienteId, habitacionId, fechaInicio, fechaFin) {
-        this.clienteId = clienteId;
-        this.habitacionId = habitacionId;
-        this.fechaInicio = new Date(fechaInicio);
-        this.fechaFin = new Date(fechaFin);
-    }
-
-    static desdeDict(data) {
-        return new SolicitudReservaDTO(
-            data.clienteId,
-            data.habitacionId,
-            data.fechaInicio,
-            data.fechaFin
-        );
-    }
-}
-
-export class ReservaDTO {
-    constructor(id, cliente, habitacion, fechaInicio, fechaFin, estado, noches, precioTotal) {
-        this.id = id;
-        this.cliente = cliente;
-        this.habitacion = habitacion;
-        this.fechaInicio = fechaInicio;
-        this.fechaFin = fechaFin;
-        this.estado = estado;
-        this.noches = noches;
-        this.precioTotal = precioTotal;
-    }
-
-    static desdeEntidad(reserva, cliente, habitacion) {
-        return new ReservaDTO(
-            reserva.id,
-            { id: cliente.id, nombre: cliente.nombre, email: cliente.email },
-            { id: habitacion.id, numero: habitacion.numero, tipo: habitacion.tipo },
-            reserva.fechaInicio,
-            reserva.fechaFin,
-            reserva.estado,
-            reserva.noches,
-            habitacion.calcularPrecio(reserva.noches)
-        );
-    }
-
-    toJSON() {
-        return {
-            id: this.id,
-            cliente: this.cliente,
-            habitacion: this.habitacion,
-            fechaInicio: this.fechaInicio.toISOString(),
-            fechaFin: this.fechaFin.toISOString(),
-            estado: this.estado,
-            noches: this.noches,
-            precioTotal: this.precioTotal
-        };
-    }
-}
-```
-
-**Application/servicios/servicioReserva.js**
-```javascript
-// Application/servicios/servicioReserva.js
-
-import { ClienteNoEncontrado, HabitacionNoDisponible, FechasInvalidas } from '../../Domain/excepciones/excepcionesDominio.js';
-import { Reserva, EstadoReserva } from '../../Domain/entidades/reserva.js';
-import { ReservaDTO } from '../dto/reservaDto.js';
-import { createLogger } from '../../Infrastructure/logging/loggerConfig.js';
-
-export class ServicioReserva {
-    constructor(repoCliente, repoHabitacion, repoReserva) {
-        this.repoCliente = repoCliente;
-        this.repoHabitacion = repoHabitacion;
-        this.repoReserva = repoReserva;
-        this.logger = createLogger('ServicioReserva');
-    }
-
-    async crearReserva(solicitud) {
-        this.logger.info(`Creando reserva para cliente ${solicitud.clienteId}`);
-
-        if (solicitud.fechaFin <= solicitud.fechaInicio) {
-            throw new FechasInvalidas();
-        }
-
-        const cliente = await this.repoCliente.obtenerPorId(solicitud.clienteId);
-        if (!cliente) {
-            throw new ClienteNoEncontrado(solicitud.clienteId);
-        }
-
-        const reservasExistentes = await this.repoReserva.obtenerPorHabitacion(
-            solicitud.habitacionId,
-            solicitud.fechaInicio,
-            solicitud.fechaFin
-        );
-
-        if (reservasExistentes.length > 0) {
-            throw new HabitacionNoDisponible(
-                solicitud.habitacionId,
-                solicitud.fechaInicio,
-                solicitud.fechaFin
-            );
-        }
-
-        const habitacion = await this.repoHabitacion.obtenerPorId(solicitud.habitacionId);
-        
-        const reserva = new Reserva(
-            null,
-            cliente.id,
-            habitacion.id,
-            solicitud.fechaInicio,
-            solicitud.fechaFin,
-            EstadoReserva.PENDIENTE
-        );
-
-        const reservaGuardada = await this.repoReserva.guardar(reserva);
-        this.logger.info(`Reserva creada con ID ${reservaGuardada.id}`);
-        
-        return ReservaDTO.desdeEntidad(reservaGuardada, cliente, habitacion);
-    }
-
-    async confirmarReserva(reservaId) {
-        const reserva = await this.repoReserva.obtenerPorId(reservaId);
-        if (!reserva) {
-            throw new Error(`Reserva ${reservaId} no encontrada`);
-        }
-
-        reserva.confirmar();
-        await this.repoReserva.actualizarEstado(reservaId, reserva.estado);
-        
-        const cliente = await this.repoCliente.obtenerPorId(reserva.clienteId);
-        const habitacion = await this.repoHabitacion.obtenerPorId(reserva.habitacionId);
-        
-        return ReservaDTO.desdeEntidad(reserva, cliente, habitacion);
-    }
-}
-```
-
-**Infrastructure/persistencia/repositoriosSQL.js**
-```javascript
-// Infrastructure/persistencia/repositoriosSQL.js
-
-import Database from 'better-sqlite3';
-import { Cliente, Habitacion, Reserva, EstadoReserva, TipoHabitacion } from '../../Domain/entidades/reserva.js';
-import { RepositorioCliente, RepositorioReserva } from '../../Application/interfaces/repositorios.js';
-
-export class RepositorioClienteSQL extends RepositorioCliente {
-    constructor(dbPath) {
-        super();
-        this.db = new Database(dbPath);
-        this._crearTabla();
-    }
-
-    _crearTabla() {
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS clientes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                telefono TEXT
-            )
-        `);
-    }
-
-    async obtenerPorId(clienteId) {
-        const stmt = this.db.prepare('SELECT id, nombre, email, telefono FROM clientes WHERE id = ?');
-        const row = stmt.get(clienteId);
-        if (row) {
-            return new Cliente(row.id, row.nombre, row.email, row.telefono || '');
-        }
-        return null;
-    }
-
-    async guardar(cliente) {
-        const stmt = this.db.prepare(
-            'INSERT INTO clientes (nombre, email, telefono) VALUES (?, ?, ?)'
-        );
-        const info = stmt.run(cliente.nombre, cliente.email, cliente.telefono);
-        cliente.id = info.lastInsertRowid;
-        return cliente;
-    }
-
-    async listar() {
-        const stmt = this.db.prepare('SELECT id, nombre, email, telefono FROM clientes');
-        const rows = stmt.all();
-        return rows.map(r => new Cliente(r.id, r.nombre, r.email, r.telefono || ''));
-    }
-}
-
-export class RepositorioReservaSQL extends RepositorioReserva {
-    constructor(dbPath) {
-        super();
-        this.db = new Database(dbPath);
-        this._crearTabla();
-    }
-
-    _crearTabla() {
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS reservas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cliente_id INTEGER NOT NULL,
-                habitacion_id INTEGER NOT NULL,
-                fecha_inicio TEXT NOT NULL,
-                fecha_fin TEXT NOT NULL,
-                estado TEXT NOT NULL,
-                fecha_creacion TEXT
-            )
-        `);
-    }
-
-    async obtenerPorHabitacion(habitacionId, fechaInicio, fechaFin) {
-        const stmt = this.db.prepare(`
-            SELECT id, cliente_id, habitacion_id, fecha_inicio, fecha_fin, estado, fecha_creacion
-            FROM reservas 
-            WHERE habitacion_id = ?
-            AND estado IN ('pendiente', 'confirmada')
-            AND NOT (fecha_fin <= ? OR fecha_inicio >= ?)
-        `);
-        
-        const rows = stmt.all(
-            habitacionId,
-            fechaInicio.toISOString(),
-            fechaFin.toISOString()
-        );
-
-        return rows.map(r => new Reserva(
-            r.id,
-            r.cliente_id,
-            r.habitacion_id,
-            new Date(r.fecha_inicio),
-            new Date(r.fecha_fin),
-            r.estado,
-            r.fecha_creacion ? new Date(r.fecha_creacion) : null
-        ));
-    }
-
-    async guardar(reserva) {
-        const stmt = this.db.prepare(
-            'INSERT INTO reservas (cliente_id, habitacion_id, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, ?, ?)'
-        );
-        const info = stmt.run(
-            reserva.clienteId,
-            reserva.habitacionId,
-            reserva.fechaInicio.toISOString(),
-            reserva.fechaFin.toISOString(),
-            reserva.estado
-        );
-        reserva.id = info.lastInsertRowid;
-        return reserva;
-    }
-
-    async actualizarEstado(reservaId, nuevoEstado) {
-        const stmt = this.db.prepare('UPDATE reservas SET estado = ? WHERE id = ?');
-        const info = stmt.run(nuevoEstado, reservaId);
-        return info.changes > 0;
-    }
-
-    async obtenerPorId(reservaId) {
-        const stmt = this.db.prepare(
-            'SELECT id, cliente_id, habitacion_id, fecha_inicio, fecha_fin, estado FROM reservas WHERE id = ?'
-        );
-        const r = stmt.get(reservaId);
-        if (r) {
-            return new Reserva(
-                r.id,
-                r.cliente_id,
-                r.habitacion_id,
-                new Date(r.fecha_inicio),
-                new Date(r.fecha_fin),
-                r.estado
-            );
-        }
-        return null;
-    }
-}
-```
-
-### Estructura
-
-```
-proyecto/
-│
-├── package.json
-├── backend.js
-├── bootstrap.js
-│
-├── Application/
-│   ├── servicios/
-│   │   └── servicioReserva.js
-│   ├── dto/
-│   │   └── reservaDto.js
-│   └── interfaces/
-│       └── repositorios.js
-│
-├── Domain/
-│   ├── entidades/
-│   │   └── reserva.js
-│   └── excepciones/
-│       └── excepcionesDominio.js
-│
-├── Infrastructure/
-│   ├── persistencia/
-│   │   └── repositoriosSQL.js
-│   └── logging/
-│       └── loggerConfig.js
-│
-└── User_Interface/
-    ├── cli.js
-    └── vistas/
-```
-
 ---
 
 ## Nivel 4 — Patrón AUDDITS
-Extensión productiva con testing, scripts y documentación.
 
-### Cuándo escalar al Nivel 5
-Escalar cuando la UI se vuelva compleja con múltiples vistas y estado compartido, cuando los ViewModels necesiten ser testeables sin levantar la interfaz, o cuando se prevea reutilizar la lógica de presentación en múltiples frameworks.
+### El producto profesional
 
-### Reglas de Desarrollo
+Nivel 3 te dio orden. Nivel 4 te da **calidad, repetibilidad y sostenibilidad**.
+
+Aquí agregamos pruebas, scripts, documentación y flujos de equipo. El código ya no es solo funcional: es **profesional**.
+
+### ⚠ Advertencia estratégica
+
+**Nivel 4 no es obligatorio.**
+
+Si el producto no lo exige, permanecer en Nivel 3 es una decisión profesional válida.
+
+No escalas porque "es mejor". Escalas porque **el costo de no hacerlo supera el costo de hacerlo**.
+
+### Estructura típica
+
+```
+src/
+ ├─ Domain/
+ ├─ Application/
+ ├─ Infrastructure/
+ ├─ UI/
+
+tests/
+scripts/
+docs/
+```
+
+### Reglas Arquitectónicas
 
 **Regla #1 — Responsabilidad Única**
-- Cada archivo tiene una única responsabilidad bien definida.
-- Cada clase tiene una sola razón para cambiar.
-- Cada función hace una sola cosa y la hace correctamente.
+
+Cada archivo, clase y función tiene una sola razón para cambiar.
 
 ```javascript
-// ❌ MAL — tres responsabilidades en un método
+// ❌ MAL — tres responsabilidades
 class ServicioUsuario {
     async registrar(datos) {
         if (!datos.email) throw new Error();   // validación
-        await this.db.guardar(datos);           // persistencia
-        await this.email.enviarBienvenida();    // notificación
+        await this.db.guardar(datos);          // persistencia
+        await this.email.enviarBienvenida();   // notificación
     }
 }
 
 // ✅ BIEN — cada responsabilidad en su lugar
 class ServicioRegistro {
+    constructor(validador, repositorio, eventEmitter) {
+        this.validador = validador;
+        this.repositorio = repositorio;
+        this.eventEmitter = eventEmitter;
+    }
+
     async registrar(dto) {
         const usuario = this.validador.validar(dto);
         await this.repositorio.guardar(usuario);
@@ -1165,570 +412,189 @@ class ServicioRegistro {
 ```
 
 **Regla #2 — Dependencias Direccionales**
-- Domain no depende de ninguna otra capa.
-- Application solo depende de Domain.
-- Infrastructure puede depender de Application y Domain.
-- User_Interface depende de Application, nunca directamente de Infrastructure.
+
+- Domain → No depende de nadie.
+- Application → Solo depende de Domain.
+- Infrastructure → Depende de Application y Domain.
+- UI → Depende de Application. Nunca de Infrastructure directo.
+
+**Regla #3 — Inyección de Dependencias**
 
 ```javascript
-// Domain/entidades/usuario.js — No importa nada externo
-export class Usuario {
-    constructor(nombre, email) {
-        this.nombre = nombre;
-        this.email = email;
-    }
-}
-
-// Application/servicios/servicioUsuario.js — Solo importa Domain
-import { Usuario } from '../../Domain/entidades/usuario.js';
-import { RepositorioUsuario } from '../interfaces/repositorioUsuario.js';
-
-// Infrastructure/persistencia/repositorioUsuarioSQL.js — Implementa contratos
-import { Usuario } from '../../Domain/entidades/usuario.js';
-import { RepositorioUsuario } from '../../Application/interfaces/repositorioUsuario.js';
-
-// User_Interface/cli.js — Consume Application
-import { Backend } from '../backend.js';
-```
-
-**Regla #3 — Nomenclatura**
-- Clases → PascalCase.
-- Métodos y variables → camelCase.
-- Constantes → UPPER_SNAKE_CASE.
-- Archivos → kebab-case.js o camelCase.js (consistente).
-
-**Regla #4 — Importaciones Correctas**
-```javascript
-// ✅ Correcto
-import { Usuario } from '../Domain/entidades/usuario.js';
-import { ServicioUsuario } from './servicios/servicioUsuario.js';
-import { RepositorioUsuarioSQL } from '../Infrastructure/persistencia/repositorioUsuarioSQL.js';
-
-// ❌ Evitar
-import * as Domain from '../Domain';
-import ServicioUsuario from './servicios';
-```
-
-**Regla #5 — Manejo de Errores**
-- Excepciones de negocio en Domain/excepciones/.
-- Excepciones técnicas en Infrastructure.
-- La UI solo expone mensajes amigables.
-
-**Regla #6 — Inyección de Dependencias**
-```javascript
-// ✅ BIEN — dependencia inyectada, testeable
-class ServicioUsuario {
+// ✅ BIEN — inyectada, testeable
+export class ServicioUsuario {
     constructor(repositorio) {
         this.repositorio = repositorio;
     }
 }
 
-// ❌ MAL — dependencia oculta, imposible de mockear
-class ServicioUsuario {
+// ❌ MAL — oculta, imposible de mockear
+export class ServicioUsuario {
     constructor() {
-        this.repositorio = new RepositorioUsuarioSQL(); // acoplado al proveedor concreto
+        this.repositorio = new RepositorioUsuarioSQL();
     }
 }
 ```
 
-**Regla #7 — DTOs vs Entidades**
-- Las entidades de dominio no se exponen directamente a la UI.
-- Los DTOs transportan datos entre capas.
-- Las entidades contienen lógica; los DTOs solo estructura.
+**Regla #4 — DTOs vs Entidades**
 
-```javascript
-// Domain — con lógica de negocio
-export class Usuario {
-    cambiarPassword(passwordNueva) {
-        if (passwordNueva.length < 8) {
-            throw new Error('Password demasiado corto');
-        }
-        this._passwordHash = hash(passwordNueva);
-        this._intentosFallidos = 0;
-    }
-}
+- Entidades: contienen lógica de negocio.
+- DTOs: solo transportan datos entre capas.
 
-// Application — solo datos, sin lógica
-export class UsuarioDTO {
-    constructor(id, nombre, email, estaBloqueado) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.estaBloqueado = estaBloqueado;
-    }
+### Reglas de Calidad
 
-    static desdeEntidad(usuario) {
-        return new UsuarioDTO(
-            usuario.id,
-            usuario.nombre,
-            usuario.email,
-            usuario.estaBloqueado
-        );
-    }
+**Regla #5 — Pruebas obligatorias**
 
-    toJSON() {
-        return {
-            id: this.id,
-            nombre: this.nombre,
-            email: this.email,
-            bloqueado: this.estaBloqueado
-        };
-    }
-}
-```
-
-**Regla #8 — backend.js como Adaptador**
-```javascript
-// backend.js
-import { createLogger } from './Infrastructure/logging/loggerConfig.js';
-import { RepositorioUsuarioSQL } from './Infrastructure/persistencia/repositoriosSQL.js';
-import { ServicioUsuario } from './Application/servicios/servicioUsuario.js';
-import { UsuarioDTO } from './Application/dto/usuarioDto.js';
-
-export class Backend {
-    constructor(config = {}) {
-        this.config = config;
-        this.logger = createLogger('Backend');
-        this._inicializarServicios();
-    }
-
-    _inicializarServicios() {
-        this.repositorioUsuario = new RepositorioUsuarioSQL(
-            this.config.dbPath || 'data/dev.db'
-        );
-        this.servicioUsuario = new ServicioUsuario(this.repositorioUsuario);
-    }
-
-    async obtenerUsuarios(filtros = null) {
-        try {
-            const usuarios = await this.servicioUsuario.listar(filtros);
-            return usuarios.map(u => UsuarioDTO.desdeEntidad(u));
-        } catch (error) {
-            this.logger.error(`Error obteniendo usuarios: ${error.message}`);
-            return [];
-        }
-    }
-
-    async crearUsuario(datos) {
-        try {
-            const usuario = await this.servicioUsuario.crear(datos);
-            return UsuarioDTO.desdeEntidad(usuario);
-        } catch (error) {
-            this.logger.error(`Error creando usuario: ${error.message}`);
-            throw error;
-        }
-    }
-
-    cerrar() {
-        if (this.repositorioUsuario && this.repositorioUsuario.cerrar) {
-            this.repositorioUsuario.cerrar();
-        }
-    }
-}
-```
-
-**Regla #9 — bootstrap.js como Orquestador**
-```javascript
-// bootstrap.js
-#!/usr/bin/env node
-
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Backend } from './backend.js';
-import { createLogger } from './Infrastructure/logging/loggerConfig.js';
-import { CLI } from './User_Interface/cli.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-class Application {
-    constructor() {
-        this.backend = null;
-        this.logger = null;
-        this._cargarConfiguracion();
-    }
-
-    _cargarConfiguracion() {
-        dotenv.config({ path: path.join(__dirname, '.env') });
-    }
-
-    inicializar(modo = 'desarrollo') {
-        const config = {
-            desarrollo: { dbPath: 'data/dev.db', logLevel: 'debug' },
-            produccion: { dbPath: process.env.DB_PATH, logLevel: 'info' },
-            test: { dbPath: ':memory:', logLevel: 'error' }
-        }[modo] || {};
-
-        this.logger = createLogger('Bootstrap', config.logLevel);
-        this.backend = new Backend(config);
-        this.logger.info(`Aplicación inicializada en modo: ${modo}`);
-    }
-
-    async ejecutar() {
-        const cli = new CLI(this.backend);
-        await cli.iniciar();
-    }
-
-    cerrar() {
-        if (this.backend) {
-            this.backend.cerrar();
-        }
-    }
-}
-
-async function main() {
-    const app = new Application();
-    const modo = process.argv.includes('--prod') ? 'produccion' : 'desarrollo';
-    
-    try {
-        app.inicializar(modo);
-        await app.ejecutar();
-    } catch (error) {
-        console.error('Error fatal:', error);
-        process.exit(1);
-    } finally {
-        app.cerrar();
-    }
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-    main();
-}
-
-export { Application };
-```
-
-**Regla #10 — Pruebas con Jest**
+- Cada módulo tiene su test.
+- Pruebas independientes y repetibles.
+- Mocks para servicios externos.
+- Cobertura ≥ 80%.
 
 ```javascript
 // Tests/test_domain/usuario.test.js
 import { Usuario } from '../../Domain/entidades/usuario.js';
 
 describe('Usuario', () => {
-    let usuario;
-
-    beforeEach(() => {
-        usuario = new Usuario(1, 'Juan Pérez', 'juan@example.com');
-    });
-
-    test('debe crear usuario válido', () => {
-        expect(usuario.nombre).toBe('Juan Pérez');
-        expect(usuario.activo).toBe(true);
-    });
-
-    test('debe lanzar error con email inválido', () => {
+    test('email inválido lanza error', () => {
+        const usuario = new Usuario(1, 'Juan', 'juan@example.com');
         expect(() => {
             usuario.cambiarEmail('email-invalido');
         }).toThrow('Email inválido');
     });
-
-    test('debe desactivar usuario', () => {
-        usuario.desactivar();
-        expect(usuario.activo).toBe(false);
-    });
-});
-
-// Tests/test_application/servicioUsuario.test.js
-import { ServicioUsuario } from '../../Application/servicios/servicioUsuario.js';
-
-describe('ServicioUsuario', () => {
-    let servicio;
-    let mockRepositorio;
-
-    beforeEach(() => {
-        mockRepositorio = {
-            guardar: jest.fn(),
-            obtenerPorId: jest.fn()
-        };
-        servicio = new ServicioUsuario(mockRepositorio);
-    });
-
-    test('debe crear usuario exitosamente', async () => {
-        const datos = { nombre: 'Test', email: 'test@example.com' };
-        mockRepositorio.guardar.mockResolvedValue({ id: 1, ...datos });
-
-        const resultado = await servicio.crear(datos);
-
-        expect(resultado.id).toBe(1);
-        expect(mockRepositorio.guardar).toHaveBeenCalled();
-    });
-});
-
-// Tests/test_infrastructure/repositorios.test.js
-import Database from 'better-sqlite3';
-import { RepositorioUsuarioSQL } from '../../Infrastructure/persistencia/repositoriosSQL.js';
-import { Usuario } from '../../Domain/entidades/usuario.js';
-
-describe('RepositorioUsuarioSQL', () => {
-    let db;
-    let repositorio;
-
-    beforeEach(() => {
-        db = new Database(':memory:');
-        repositorio = new RepositorioUsuarioSQL(':memory:');
-    });
-
-    afterEach(() => {
-        db.close();
-    });
-
-    test('debe guardar y recuperar usuario', async () => {
-        const usuario = new Usuario(null, 'Test', 'test@example.com');
-        const guardado = await repositorio.guardar(usuario);
-
-        expect(guardado.id).toBeDefined();
-
-        const recuperado = await repositorio.obtenerPorId(guardado.id);
-        expect(recuperado.nombre).toBe('Test');
-    });
 });
 ```
 
-**package.json para testing**
-```json
-{
-  "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "lint": "eslint .",
-    "format": "prettier --write ."
-  },
-  "devDependencies": {
-    "jest": "^29.0.0",
-    "@types/jest": "^29.0.0",
-    "eslint": "^8.0.0",
-    "prettier": "^3.0.0"
-  },
-  "jest": {
-    "transform": {},
-    "testEnvironment": "node",
-    "testMatch": ["**/Tests/**/*.test.js"],
-    "collectCoverageFrom": [
-      "Application/**/*.js",
-      "Domain/**/*.js",
-      "Infrastructure/**/*.js"
-    ]
-  }
-}
-```
+**Regla #6 — Documentación con JSDoc**
 
-**Regla #11 — Documentación con JSDoc**
 ```javascript
 /**
- * Procesa un pago para un usuario específico.
- * 
+ * Procesa un pago.
  * @param {Object} params - Parámetros del pago
- * @param {number} params.usuarioId - Identificador único del usuario
- * @param {number} params.monto - Cantidad a cobrar (mayor a 0, menor a 10000)
- * @param {string} params.metodoPago - 'tarjeta', 'transferencia' o 'efectivo'
- * @param {string} [params.tokenTarjeta] - Token requerido solo para método 'tarjeta'
- * @returns {Promise<Object>} Resultado con campos: exitoso, transaccionId, mensaje
- * @throws {UsuarioNoEncontrado} Si el usuarioId no existe
- * @throws {PagoRechazado} Si la pasarela rechaza la transacción
- * 
- * @example
- * const resultado = await procesarPago({
- *   usuarioId: 123,
- *   monto: 99.99,
- *   metodoPago: 'tarjeta',
- *   tokenTarjeta: 'tok_visa_123'
- * });
- * if (resultado.exitoso) {
- *   console.log(resultado.transaccionId);
- * }
+ * @param {number} params.usuarioId - ID del usuario
+ * @returns {Promise<Object>} Resultado
  */
-async function procesarPago({ usuarioId, monto, metodoPago, tokenTarjeta }) {
+async function procesarPago({ usuarioId, monto }) {
     // implementación
 }
 ```
 
-**Regla #12 — Git Workflow**
-- main → Producción.
-- develop → Integración.
-- feature/* → Nuevas funcionalidades.
-- hotfix/* → Correcciones urgentes.
-- release/* → Preparación de versiones.
+**Regla #7 — Manejo de Errores**
+
+- Negocio → Domain/excepciones/
+- Técnicos → Infrastructure/
+- UI → Mensajes amigables
+
+### Reglas de Equipo
+
+**Regla #8 — Nomenclatura Consistente**
+
+- Clases → PascalCase
+- Métodos → camelCase
+- Constantes → UPPER_SNAKE_CASE
+- Archivos → kebab-case.js
+
+**Regla #9 — Git Workflow**
+
+```
+main      → Producción
+develop   → Integración
+feature/* → Nuevas funcionalidades
+hotfix/*  → Correcciones urgentes
+```
 
 ```bash
-# Convenciones de commits: tipo(alcance): descripción
-feat(usuarios): añadir búsqueda por email
-fix(pagos): corregir cálculo de impuestos
-docs(api): actualizar documentación de endpoints
-test(usuarios): añadir pruebas para registro
-refactor(backend): simplificar inyección de dependencias
+feat(usuarios): buscar por email
+fix(pagos): corregir impuestos
+docs(api): actualizar endpoints
+test(usuarios): pruebas de registro
 ```
 
-### Estructura
+**Regla #10 — bootstrap.js como Orquestador**
 
-```
-proyecto/
-│
-├── package.json
-├── backend.js
-├── bootstrap.js
-├── .env
-├── .gitignore
-├── .eslintrc.json
-├── .prettierrc
-│
-├── Application/
-├── Domain/
-├── Infrastructure/
-├── User_Interface/
-│
-├── Tests/
-│   ├── test_domain/
-│   ├── test_application/
-│   └── test_infrastructure/
-│
-├── Scripts/
-│   ├── migraciones.js
-│   └── seed.js
-│
-└── Docs/
-    ├── README.md
-    └── arquitectura.md
+```javascript
+export class Application {
+    constructor() {
+        this.backend = null;
+    }
+
+    inicializar(modo = 'desarrollo') {
+        const config = {
+            desarrollo: { dbPath: 'data/dev.db' },
+            produccion: { dbPath: process.env.DB_PATH }
+        }[modo];
+
+        this.backend = new Backend(config);
+    }
+
+    async ejecutar() {
+        const cli = new CLI(this.backend);
+        await cli.iniciar();
+    }
+}
 ```
 
 ---
 
-## Nivel 5 — Patrón AUDDITS + MVVM
-Extensión completa con separación de presentación mediante MVVM.
+## Nivel 5 — AUDDITS + MVVM
 
-### Cuándo NO usar MVVM
-MVVM agrega overhead real. No está justificado cuando:
+### Sistemas con UI compleja
+
+Cuando la interfaz de usuario crece, el desorden migra a la UI.
+
+MVVM rescata ese caos separando:
+
+- **View** → Solo renderizado y binding
+- **ViewModel** → Estado observable y lógica de UI
+- **Model** → Datos (UI o negocio)
+
+### ⚠ Señal de transición (T4 — Separación por experiencia de usuario)
+
+Si la UI se vuelve compleja con múltiples vistas y estado compartido, si necesitas testear la lógica de presentación sin levantar la interfaz, o si prevés reutilizar la lógica de UI en múltiples frameworks, escala a Nivel 5.
+
+### ⚠ Advertencia estratégica
+
+**MVVM no es para todos los proyectos.**
+
+Evítalo si:
 - La UI tiene una sola vista sin estado complejo.
 - El proyecto es interno o de vida corta.
 - El equipo no tiene experiencia con el patrón.
-- No hay necesidad de testear la lógica de presentación por separado.
+- El estado de UI es mínimo y local.
 
-### Reglas MVVM
+Si puedes resolverlo con estado local simple, **no lo uses**.
 
-**Regla #13 — Separación MVVM**
-Vista → ViewModel → Modelo.
-- La Vista contiene solo widgets y lógica de presentación.
-- El ViewModel contiene estado observable y lógica de UI.
-- El Modelo contiene datos (UI o negocio según capa).
-- La Vista nunca accede directamente a Domain o Infrastructure.
+---
+
+### ViewModelBase
 
 ```javascript
-// Vista (User_Interface) — solo widgets y binding
-class VistaUsuarios {
-    constructor(parent, viewmodel) {
-        this.viewmodel = viewmodel;
-        this.viewmodel.suscribir(this._onCambio.bind(this));
-        this._crearWidgets();
-    }
-
-    _onCambio(evento) {
-        if (evento.nombre === 'usuarios') {
-            this._actualizarTabla();
-        }
-    }
-}
-
-// ViewModel (Presentation) — estado y lógica de UI
-class UsuarioViewModel extends ViewModelBase {
-    async cargarUsuarios() {
-        this._usuarios = await this.backend.obtenerUsuarios();
-        this.notificarCambio('usuarios');
-    }
-}
-```
-
-**Regla #14 — ViewModelBase obligatorio**
-```javascript
-// Presentation/viewmodels/viewmodelBase.js
 import EventEmitter from 'events';
 
 export class ViewModelBase extends EventEmitter {
     constructor() {
         super();
         this._propiedades = new Map();
-        this._errores = new Map();
         this._ocupado = false;
-        this._mensajeEstado = '';
     }
 
-    notificarCambio(nombre, valorAnterior = null) {
-        const evento = {
-            nombre,
-            valorAnterior,
-            valorNuevo: this._propiedades.get(nombre)
-        };
-        this.emit('cambio', evento);
+    notificarCambio(nombre, valor) {
+        this.emit('cambio', { nombre, valor });
     }
 
-    establecerPropiedad(nombre, valor) {
-        const valorAnterior = this._propiedades.get(nombre);
-        if (valorAnterior !== valor) {
-            this._propiedades.set(nombre, valor);
-            this.notificarCambio(nombre, valorAnterior);
-            return true;
-        }
-        return false;
+    set ocupado(valor) {
+        this._ocupado = valor;
+        this.notificarCambio('ocupado', valor);
     }
 
-    get ocupado() { return this._ocupado; }
-    set ocupado(valor) { this.establecerPropiedad('_ocupado', valor); }
-
-    get mensajeEstado() { return this._mensajeEstado; }
-    set mensajeEstado(msg) { this.establecerPropiedad('_mensajeEstado', msg); }
-
-    agregarError(propiedad, mensaje) {
-        this._errores.set(propiedad, mensaje);
-        this.notificarCambio(`error_${propiedad}`);
-    }
-
-    limpiarErrores() {
-        this._errores.clear();
+    get ocupado() {
+        return this._ocupado;
     }
 }
 ```
 
-**Regla #15 — Modelos de UI**
+### ViewModel concreto
+
 ```javascript
-// Presentation/models/uiUsuario.js
-export class UIUsuario {
-    constructor(id = null, nombre = '', email = '', activo = true) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.activo = activo;
-        this.seleccionado = false;
-        this.editando = false;
-    }
-
-    validarFormato() {
-        const errores = {};
-        if (this.nombre && this.nombre.trim().length < 3) {
-            errores.nombre = 'Mínimo 3 caracteres';
-        }
-        if (this.email && !/^[^@]+@[^@]+\.[^@]+$/.test(this.email)) {
-            errores.email = 'Formato email inválido';
-        }
-        return errores;
-    }
-
-    toJSON() {
-        return {
-            id: this.id,
-            nombre: this.nombre,
-            email: this.email,
-            activo: this.activo
-        };
-    }
-
-    static fromDTO(dto) {
-        return new UIUsuario(dto.id, dto.nombre, dto.email, dto.activo);
-    }
-}
-```
-
-**Regla #16 — ViewModels Específicos**
-```javascript
-// Presentation/viewmodels/usuarioViewModel.js
 import { ViewModelBase } from './viewmodelBase.js';
 import { UIUsuario } from '../models/uiUsuario.js';
 
@@ -1737,7 +603,6 @@ export class UsuarioViewModel extends ViewModelBase {
         super();
         this.backend = backend;
         this._usuarios = [];
-        this._usuarioSeleccionado = null;
         this._filtroNombre = '';
         this.cargarUsuarios();
     }
@@ -1750,718 +615,108 @@ export class UsuarioViewModel extends ViewModelBase {
         );
     }
 
-    get filtroNombre() { return this._filtroNombre; }
     set filtroNombre(valor) {
-        this.establecerPropiedad('_filtroNombre', valor);
-        this.notificarCambio('usuarios');
+        this._filtroNombre = valor;
+        this.notificarCambio('usuarios', this.usuarios);
     }
 
     async cargarUsuarios() {
         this.ocupado = true;
-        this.mensajeEstado = 'Cargando usuarios...';
         
         try {
             const dtos = await this.backend.obtenerUsuarios();
             this._usuarios = dtos.map(dto => UIUsuario.fromDTO(dto));
-            this.mensajeEstado = `${this._usuarios.length} usuarios cargados`;
-            this.notificarCambio('usuarios');
+            this.notificarCambio('usuarios', this.usuarios);
         } catch (error) {
-            this.mensajeEstado = `Error: ${error.message}`;
+            this.notificarCambio('error', error.message);
         } finally {
             this.ocupado = false;
-        }
-    }
-
-    async guardarActual() {
-        if (!this._usuarioSeleccionado) return false;
-
-        const errores = this._usuarioSeleccionado.validarFormato();
-        if (Object.keys(errores).length > 0) {
-            Object.entries(errores).forEach(([campo, msg]) => {
-                this.agregarError(campo, msg);
-            });
-            return false;
-        }
-
-        this.ocupado = true;
-        try {
-            if (this._usuarioSeleccionado.id) {
-                await this.backend.actualizarUsuario(
-                    this._usuarioSeleccionado.id,
-                    this._usuarioSeleccionado.toJSON()
-                );
-            } else {
-                const dto = await this.backend.crearUsuario(
-                    this._usuarioSeleccionado.toJSON()
-                );
-                this._usuarioSeleccionado.id = dto.id;
-            }
-            this.mensajeEstado = 'Guardado correctamente';
-            await this.cargarUsuarios();
-            return true;
-        } catch (error) {
-            this.mensajeEstado = `Error: ${error.message}`;
-            return false;
-        } finally {
-            this.ocupado = false;
-        }
-    }
-
-    seleccionarUsuario(usuario) {
-        this._usuarioSeleccionado = usuario;
-        this.notificarCambio('usuarioSeleccionado');
-    }
-}
-```
-
-**Regla #17 — Comandos**
-```javascript
-// Presentation/commands/comandoBase.js
-export class ComandoBase {
-    constructor(viewmodel) {
-        this.viewmodel = viewmodel;
-        this._ejecutado = false;
-    }
-
-    puedeEjecutar() {
-        return !this.viewmodel.ocupado;
-    }
-
-    async ejecutar(...args) {
-        throw new Error('Método ejecutar debe ser implementado');
-    }
-
-    deshacer() {}
-}
-
-export class ComandoGuardarUsuario extends ComandoBase {
-    constructor(viewmodel) {
-        super(viewmodel);
-        this._respaldo = null;
-    }
-
-    async ejecutar() {
-        if (!this.puedeEjecutar()) return false;
-
-        if (this.viewmodel._usuarioSeleccionado) {
-            this._respaldo = { ...this.viewmodel._usuarioSeleccionado.toJSON() };
-        }
-
-        const resultado = await this.viewmodel.guardarActual();
-        if (resultado) {
-            this._ejecutado = true;
-        }
-        return resultado;
-    }
-
-    deshacer() {
-        if (this._ejecutado && this._respaldo) {
-            this.viewmodel.mensajeEstado = 'Operación deshecha';
-            this.viewmodel.cargarUsuarios();
         }
     }
 }
 ```
 
-**Regla #18 — Binding Vista–ViewModel con React**
+### Binding con React
+
 ```jsx
-// User_Interface/vistas/VistaUsuarios.jsx (React)
 import React, { useState, useEffect } from 'react';
 
 export function VistaUsuarios({ viewmodel }) {
     const [usuarios, setUsuarios] = useState([]);
-    const [filtro, setFiltro] = useState('');
     const [ocupado, setOcupado] = useState(false);
-    const [mensaje, setMensaje] = useState('');
 
     useEffect(() => {
         const handleCambio = (evento) => {
-            switch (evento.nombre) {
-                case 'usuarios':
-                    setUsuarios([...viewmodel.usuarios]);
-                    break;
-                case '_ocupado':
-                    setOcupado(viewmodel.ocupado);
-                    break;
-                case '_mensajeEstado':
-                    setMensaje(viewmodel.mensajeEstado);
-                    break;
+            if (evento.nombre === 'usuarios') {
+                setUsuarios(evento.valor);
+            } else if (evento.nombre === 'ocupado') {
+                setOcupado(evento.valor);
             }
         };
 
         viewmodel.on('cambio', handleCambio);
+        viewmodel.cargarUsuarios();
+        
         return () => viewmodel.off('cambio', handleCambio);
     }, [viewmodel]);
 
-    const handleFiltroChange = (e) => {
-        setFiltro(e.target.value);
-        viewmodel.filtroNombre = e.target.value;
-    };
-
     return (
-        <div className="vista-usuarios">
-            <div className="toolbar">
-                <input
-                    type="text"
-                    placeholder="Filtrar por nombre..."
-                    value={filtro}
-                    onChange={handleFiltroChange}
-                />
-                <button 
-                    onClick={() => viewmodel.cargarUsuarios()}
-                    disabled={ocupado}
-                >
-                    ↻ Recargar
-                </button>
-            </div>
-
-            {ocupado && <div className="spinner">Cargando...</div>}
-            
-            {mensaje && <div className="mensaje">{mensaje}</div>}
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {usuarios.map(u => (
-                        <tr key={u.id} onClick={() => viewmodel.seleccionarUsuario(u)}>
-                            <td>{u.id}</td>
-                            <td>{u.nombre}</td>
-                            <td>{u.email}</td>
-                            <td>{u.activo ? '✅' : '❌'}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+        <div>
+            {ocupado && <div>Cargando...</div>}
+            <ul>
+                {usuarios.map(u => (
+                    <li key={u.id}>{u.nombre} - {u.email}</li>
+                ))}
+            </ul>
         </div>
     );
 }
 ```
 
-**Regla #19 — Backend como Proveedor de ViewModels**
-```javascript
-// backend.js (extendido para MVVM)
-import { UsuarioViewModel } from './Presentation/viewmodels/usuarioViewModel.js';
+---
 
-export class Backend {
-    constructor(config = {}) {
-        // ... inicialización existente ...
-        this._inicializarViewModels();
-    }
+## Cierre Filosófico
 
-    _inicializarViewModels() {
-        this.viewModelUsuario = new UsuarioViewModel(this);
-        this.viewModelProducto = new ProductoViewModel(this);
-    }
+### La sabiduría de no complicar
 
-    obtenerViewModelUsuario() {
-        return this.viewModelUsuario;
-    }
+AETHERYON no es una invitación a la complejidad.
 
-    obtenerViewModelProducto() {
-        return this.viewModelProducto;
-    }
-}
-```
+Es una herramienta para **saber cuándo detenerse**.
 
-**Regla #20 — Bootstrap Integrado**
-```javascript
-// bootstrap.js (con React)
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { Backend } from './backend.js';
-import { VistaUsuarios } from './User_Interface/vistas/VistaUsuarios.jsx';
-import { VistaProductos } from './User_Interface/vistas/VistaProductos.jsx';
+- Si tu script tiene 50 líneas y nunca crecerá → Nivel 1.
+- Si tu equipo es de dos personas y el dominio es simple → Nivel 2.
+- Si tu producto está en producción pero la UI es trivial → Nivel 4 es tu techo.
 
-class Application {
-    constructor() {
-        this.backend = null;
-    }
+Cada nivel tiene un costo. Cada nivel resuelve problemas reales.
 
-    inicializar() {
-        this.backend = new Backend({ dbPath: 'data/dev.db' });
-    }
+La madurez no es usar el nivel más alto.  
+Es **usar el nivel adecuado para el momento actual**.
 
-    ejecutar() {
-        const root = document.getElementById('root');
-        const reactRoot = createRoot(root);
+### El manifiesto AETHERYON
 
-        reactRoot.render(
-            <React.StrictMode>
-                <div className="app">
-                    <h1>Mi Aplicación</h1>
-                    <div className="tabs">
-                        <VistaUsuarios 
-                            viewmodel={this.backend.obtenerViewModelUsuario()}
-                        />
-                        <VistaProductos 
-                            viewmodel={this.backend.obtenerViewModelProducto()}
-                        />
-                    </div>
-                </div>
-            </React.StrictMode>
-        );
-    }
+> **Construimos para hoy, pero no hipotecamos mañana.**
+>
+> Separamos responsabilidades no por moda, sino porque el desorden tiene interés compuesto.
+>
+> Probamos no por cumplir métricas, sino porque lo que no se prueba, se rompe cuando más duele.
+>
+> Documentamos no por cumplir, sino porque el código dice *cómo*, pero el *por qué* se pierde si no se escribe.
+>
+> Y escalamos solo cuando el dolor de no hacerlo supera el costo de hacerlo.
 
-    cerrar() {
-        if (this.backend) {
-            this.backend.cerrar();
-        }
-    }
-}
-```
+### La arquitectura como supervivencia
 
-### Asincronía en MVVM
+Un sistema que sigue AETHERYON no es un sistema con una arquitectura.
 
-```javascript
-class UsuarioViewModel extends ViewModelBase {
-    async cargarUsuarios() {
-        this.ocupado = true;
-        this.mensajeEstado = 'Cargando usuarios...';
-        this.notificarCambio('ocupado');
+Es un sistema con **una identidad evolutiva**.
 
-        try {
-            const dtos = await this.backend.obtenerUsuarios();
-            this._usuarios = dtos.map(dto => UIUsuario.fromDTO(dto));
-            this.mensajeEstado = `${this._usuarios.length} usuarios cargados`;
-            this.notificarCambio('usuarios');
-        } catch (error) {
-            this.mensajeEstado = `Error: ${error.message}`;
-        } finally {
-            this.ocupado = false;
-            this.notificarCambio('ocupado');
-            this.notificarCambio('mensajeEstado');
-        }
-    }
-}
-```
+Sabe de dónde viene. Sabe hacia dónde va. Y sabe que mañana, cuando las reglas del negocio cambien, cuando el equipo crezca, cuando el usuario pida más, podrá adaptarse **sin reescribirse**.
 
-### Estructura Completa — Nivel 5
+Porque la mejor arquitectura no es la que soporta el cambio.
 
-```
-proyecto/
-│
-├── package.json
-├── backend.js
-├── bootstrap.js
-├── config.js
-├── .env
-├── .gitignore
-│
-├── Application/
-│   ├── servicios/
-│   ├── dto/
-│   └── interfaces/
-│
-├── Domain/
-│   ├── entidades/
-│   ├── value-objects/
-│   ├── eventos/
-│   └── excepciones/
-│
-├── Infrastructure/
-│   ├── persistencia/
-│   ├── servicios-externos/
-│   └── logging/
-│
-├── Presentation/
-│   ├── viewmodels/
-│   │   ├── viewmodelBase.js
-│   │   ├── usuarioViewModel.js
-│   │   └── productoViewModel.js
-│   ├── models/
-│   │   ├── uiUsuario.js
-│   │   └── validators.js
-│   └── commands/
-│       ├── comandoBase.js
-│       └── comandosUsuario.js
-│
-├── User_Interface/
-│   ├── vistas/
-│   │   ├── VistaUsuarios.jsx
-│   │   └── VistaProductos.jsx
-│   ├── components/
-│   │   ├── TablaDatos.jsx
-│   │   └── Formulario.jsx
-│   └── styles/
-│       └── app.css
-│
-├── Tests/
-│   ├── test_domain/
-│   ├── test_application/
-│   ├── test_infrastructure/
-│   └── test_presentation/
-│       ├── test_usuarioViewModel.js
-│       └── test_validators.js
-│
-├── Scripts/
-│   ├── migraciones.js
-│   └── seed.js
-│
-└── Docs/
-    ├── README.md
-    └── arquitectura.md
-```
+Es la que **fue diseñada para esperarlo**.
 
 ---
 
-## CLI Dev Pattern para Node.js
-
-El CLI Dev Pattern es una extensión del patrón AETHERYON orientada específicamente a herramientas de línea de comandos que operan sobre sistemas reales: repositorios, proyectos, pipelines, agentes.
-
-### Anatomía del CLI Dev Pattern
-
-```
-                     ┌───────────────────────────────┐
-                     │         FUENTES DE DATO       │
-                     │  (archivos, git, APIs)        │
-                     └───────────────┬───────────────┘
-                                     │
-                                     ▼
-      ┌──────────────────────────────────────────────────────────┐
-      │                  CAPA DE ALMACENAMIENTO (Core)           │
-      │           SQLite / JSON / Git como verdad única          │
-      └──────────┬──────────────────┬──────────────────┬─────────┘
-                 │                  │                  │
-                 ▼                  ▼                  ▼
-      ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-      │   MODELS API     │ │   EXPORT / I/O   │ │ AUTOMATIONS /    │
-      │  (dominio puro)  │ │  Markdown · JSON │ │ AGENTS (futuro)  │
-      └────────┬─────────┘ └────────┬─────────┘ └────────┬─────────┘
-               │                    │                    │
-               ▼                    ▼                    ▼
-      ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-      │       CLI        │ │       GUI        │ │    BITÁCORA      │
-      │  velocidad,      │ │  navegación,     │ │  relato,         │
-      │  scripting       │ │  foco humano     │ │  reportes        │
-      └────────┬─────────┘ └────────┬─────────┘ └────────┬─────────┘
-               │                    │                    │
-               ▼                    ▼                    ▼
-      ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-      │    COMANDOS      │ │  CONTROLES GUI   │ │    SALIDAS       │
-      │  open / close    │ │  Nueva · Editar  │ │  export.md       │
-      │  add / remove    │ │  Filtros · Orden │ │  JSON · informes │
-      └────────┬─────────┘ └────────┬─────────┘ └──────────────────┘
-               └──────────┬─────────┘
-                          │
-                          ▼
-      ┌──────────────────────────────────────────────┐
-      │             ESTADOS DE PROGRESO              │
-      │  Checkpoints · Steps · Progreso (%)          │
-      └──────────────────────────────────────────────┘
-```
-
-### AppState como coordinador
-
-```javascript
-// infrastructure/estado/appState.js
-import simpleGit from 'simple-git';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
-
-export class AppState {
-    constructor() {
-        this.proyecto = null;
-        this.archivosData = new Map(); // indice_fila: ruta_relativa
-    }
-
-    async abrirProyecto(ruta) {
-        this.proyecto = new Proyecto(ruta);
-        this.git = simpleGit(ruta);
-        await this.proyecto.cargarEstado();
-        return this.proyecto;
-    }
-
-    async obtenerEstadoArchivos() {
-        const status = await this.git.status();
-        return status.files;
-    }
-
-    async ejecutarComandoGit(...args) {
-        return await this.git.raw(args);
-    }
-
-    async abrirVSCode() {
-        if (!this.proyecto) throw new Error('No hay proyecto abierto');
-        await execAsync(`code "${this.proyecto.ruta}"`);
-    }
-
-    async crearRepoGitHub(nombre, privado = false) {
-        const comando = `gh repo create ${nombre} ${privado ? '--private' : '--public'} --source=. --remote=origin --push`;
-        await execAsync(comando, { cwd: this.proyecto.ruta });
-    }
-}
-
-class Proyecto {
-    constructor(ruta) {
-        this.ruta = ruta;
-        this.nombre = require('path').basename(ruta);
-    }
-
-    async cargarEstado() {
-        // Cargar configuración del proyecto
-    }
-}
-```
-
-### Reglas del CLI Dev Pattern
-
-**Regla CLI-1 — El Core no conoce la interfaz.**
-```javascript
-// ✅ BIEN
-export class Core {
-    constructor(storage) {
-        this.storage = storage;
-    }
-    
-    async obtenerDatos() {
-        return this.storage.leer();
-    }
-}
-
-// ❌ MAL
-export class Core {
-    constructor() {
-        this.storage = new SQLiteStorage(); // dependencia concreta
-    }
-}
-```
-
-**Regla CLI-2 — Los comandos son atómicos.**
-```javascript
-// cli/comandos/comandoCheckpoint.js
-import { ComandoBase } from './comandoBase.js';
-
-export class ComandoCheckpoint extends ComandoBase {
-    constructor(appState) {
-        super();
-        this.appState = appState;
-    }
-
-    async ejecutar(mensaje) {
-        if (!this.appState.proyecto) {
-            throw new Error('No hay proyecto abierto');
-        }
-
-        // Crear checkpoint en git
-        await this.appState.ejecutarComandoGit('add', '.');
-        await this.appState.ejecutarComandoGit('commit', '-m', `checkpoint: ${mensaje}`);
-        
-        // Registrar en bitácora
-        const checkpoint = {
-            timestamp: new Date().toISOString(),
-            mensaje,
-            hash: await this.appState.ejecutarComandoGit('rev-parse', 'HEAD')
-        };
-        
-        return checkpoint;
-    }
-}
-```
-
-**Regla CLI-3 — GUI y CLI comparten dominio.**
-```javascript
-// Ambos usan el mismo AppState
-const appState = new AppState();
-
-// CLI
-program
-    .command('abrir <ruta>')
-    .action(async (ruta) => {
-        await appState.abrirProyecto(ruta);
-        console.log(`✅ Proyecto abierto: ${ruta}`);
-    });
-
-// GUI
-function BotonAbrirProyecto({ appState }) {
-    const handleClick = async () => {
-        await appState.abrirProyecto(selectedPath);
-        // UI se actualiza mediante binding
-    };
-}
-```
-
-**Regla CLI-4 — AppState es de sesión.**
-```javascript
-// El estado se puede reconstruir desde el Core
-export class AppState {
-    async reconstruirDesdeCore() {
-        const config = await this.core.leerConfiguracion();
-        this.proyecto = new Proyecto(config.ultimoProyecto);
-        await this.proyecto.cargarEstado();
-    }
-}
-```
-
-### Ejemplo completo: CLI para gestión de proyectos
-
-```javascript
-#!/usr/bin/env node
-// cli.js - CLI para gestión de proyectos con git
-
-import { program } from 'commander';
-import inquirer from 'inquirer';
-import chalk from 'chalk';
-import { AppState } from './infrastructure/estado/appState.js';
-import { ComandoCheckpoint } from './cli/comandos/comandoCheckpoint.js';
-import { Bitacora } from './infrastructure/bitacora/bitacora.js';
-
-class CLIApp {
-    constructor() {
-        this.appState = new AppState();
-        this.bitacora = new Bitacora();
-    }
-
-    async iniciar() {
-        program
-            .version('1.0.0')
-            .description('CLI para gestión de proyectos');
-
-        program
-            .command('abrir <ruta>')
-            .description('Abrir un proyecto')
-            .action(async (ruta) => {
-                try {
-                    await this.appState.abrirProyecto(ruta);
-                    console.log(chalk.green(`✅ Proyecto abierto: ${ruta}`));
-                } catch (error) {
-                    console.log(chalk.red(`❌ Error: ${error.message}`));
-                }
-            });
-
-        program
-            .command('checkpoint <mensaje>')
-            .description('Crear un checkpoint (commit)')
-            .action(async (mensaje) => {
-                try {
-                    const comando = new ComandoCheckpoint(this.appState);
-                    const resultado = await comando.ejecutar(mensaje);
-                    console.log(chalk.green(`✅ Checkpoint creado: ${resultado.hash.substring(0, 7)}`));
-                } catch (error) {
-                    console.log(chalk.red(`❌ Error: ${error.message}`));
-                }
-            });
-
-        program
-            .command('status')
-            .description('Ver estado del proyecto')
-            .action(async () => {
-                try {
-                    const archivos = await this.appState.obtenerEstadoArchivos();
-                    console.log(chalk.cyan('\n📁 Estado del proyecto:'));
-                    archivos.forEach(f => {
-                        const color = f.working_dir === 'M' ? 'yellow' : 
-                                    f.working_dir === '?' ? 'red' : 'green';
-                        console.log(chalk[color](`  ${f.path} [${f.working_dir}]`));
-                    });
-                } catch (error) {
-                    console.log(chalk.red(`❌ Error: ${error.message}`));
-                }
-            });
-
-        program
-            .command('vscode')
-            .description('Abrir proyecto en VS Code')
-            .action(async () => {
-                try {
-                    await this.appState.abrirVSCode();
-                    console.log(chalk.green('✅ VS Code abierto'));
-                } catch (error) {
-                    console.log(chalk.red(`❌ Error: ${error.message}`));
-                }
-            });
-
-        program
-            .command('bitacora')
-            .description('Ver última entrada de bitácora')
-            .action(async () => {
-                const ultima = await this.bitacora.obtenerUltima();
-                console.log(chalk.cyan('\n📝 Última entrada:'));
-                console.log(ultima);
-            });
-
-        await program.parseAsync(process.argv);
-    }
-}
-
-const app = new CLIApp();
-app.iniciar().catch(console.error);
-```
-
----
-
-## Migración entre Niveles
-
-### De Nivel 1 a Nivel 2 (JavaScript)
-
-1. Crear `backend.js` y mover toda la lógica de negocio.
-2. Crear `cli.js` (o `ui.js`) con solo la interacción de usuario.
-3. El frontend importa el backend con `require` o `import`.
-4. Asegurar que `backend.js` no tenga `console.log` ni interacción directa con el usuario.
-
-### De Nivel 2 a Nivel 3
-
-1. Crear estructura de carpetas: `Domain/`, `Application/`, `Infrastructure/`.
-2. Mover entidades a `Domain/entidades/`.
-3. Extraer interfaces a `Application/interfaces/`.
-4. Mover acceso a datos a `Infrastructure/persistencia/`.
-5. Mover servicios orquestadores a `Application/servicios/`.
-6. Convertir `backend.js` en adaptador y crear `bootstrap.js`.
-
-### De Nivel 3 a Nivel 4
-
-1. Instalar Jest y configurar testing.
-2. Crear `Tests/` con estructura espejo.
-3. Escribir tests para Domain primero.
-4. Agregar `Scripts/` para migraciones y seed.
-5. Crear `Docs/` con README.md.
-
-### De Nivel 4 a Nivel 5
-
-1. Crear `Presentation/` con viewmodels, models, commands.
-2. Crear `ViewModelBase` primero.
-3. Migrar lógica de UI de `User_Interface/` a ViewModels.
-4. Implementar binding en las vistas.
-5. Agregar `test_presentation/` en Tests.
-
----
-
-## Conclusión
-
-El patrón AETHERYON para JavaScript/Node.js proporciona una arquitectura progresiva y escalable:
-
-- **Nivel 1** — Script único con `commander` para CLI.
-- **Nivel 2** — BF: separación backend/frontend con módulos CommonJS o ES.
-- **Nivel 3** — AUDI: arquitectura por capas con inyección de dependencias.
-- **Nivel 4** — AUDDITS: testing con Jest, scripts y documentación JSDoc.
-- **Nivel 5** — AUDDITS + MVVM: ViewModels observables con EventEmitter.
-
-**Principios clave adaptados a Node.js:**
-- Usar ES modules (`import`/`export`) para mejor tree-shaking.
-- Inyección de dependencias en constructores.
-- Tests con Jest para todas las capas.
-- Documentación con JSDoc para APIs públicas.
-- `backend.js` como facade que expone servicios a la UI.
-- `bootstrap.js` como punto de entrada que configura logging, BD y entorno.
-```
-
-Esta versión mantiene todos los conceptos del patrón original pero adaptados al ecosistema JavaScript/Node.js, incluyendo:
-
-1. **Sintaxis ES modules** moderna con `import/export`
-2. **CLI con commander** para el Nivel 1
-3. **Testing con Jest** para el Nivel 4
-4. **MVVM con React** como ejemplo para el Nivel 5
-5. **Manejo de asincronía** con async/await
-6. **EventEmitter** para el sistema de notificaciones del ViewModel
-7. **package.json** en cada nivel con dependencias apropiadas
-8. **Ejemplos funcionales** que se pueden ejecutar directamente
-
-El patrón mantiene la filosofía original de progresión controlada, permitiendo que los proyectos crezcan en complejidad de manera ordenada sin reescrituras completas.
+**Código que funciona es común.  
+Código que perdura es intencional.**
