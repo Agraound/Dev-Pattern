@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+        .status-card.connected {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        .status-card.disconnected {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .status-text {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-text.connected { color: #22543d; }
+        .status-text.disconnected { color: #742a2a; }
+        .ping-info {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 10px;
+        }
+        .ping-info span {
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .api-section {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button.secondary {
+            background: #718096;
+        }
+        button.secondary:hover {
+            background: #4a5568;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e0;
+            margin-top: 20px;
+        }
+        .info-footer {
+            color: #718096;
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.9em;
+        }
+        .debug-info {
+            background: #2d3748;
+            color: #a0aec0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .error-message {
+            color: #f56565;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FastAPI App</h1>
+        
+        <div id="statusCard" class="status-card">
+            <div class="status-icon" id="statusIcon">⏳</div>
+            <div class="status-text" id="statusText">Conectando a la API...</div>
+            <div class="ping-info" id="pingInfo">
+                ⏱️ Tiempo sin ping: <span id="pingTimer">0</span>s
+                <br>
+                📊 Pings enviados: <span id="pingCount">0</span>
+                <br>
+                <span id="errorCount" style="color: #f56565;"></span>
+            </div>
+        </div>
+
+        <div class="api-section">
+            <div class="button-group">
+                <button onclick="callAPI('/api/hello')" id="btnHello">GET /api/hello</button>
+                <button onclick="callAPI('/api/time')" id="btnTime">GET /api/time</button>
+            </div>
+        </div>
+
+        <div id="result" class="result">
+            Haz clic en los botones para probar la API
+        </div>
+
+        <div id="debugLog" class="debug-info">
+            <p>📝 Log de depuración:</p>
+        </div>
+
+        <div class="info-footer">
+            <p>⏱️ La app se cerrará 6 segundos después de cerrar esta pestaña</p>
+            <p>🔄 Recargar la página mantiene la app activa</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let pingCount = 0;
+        let lastPingTime = Date.now();
+        let pingInterval;
+        let failedPings = 0;
+        let consecutiveErrors = 0;
+        let isConnected = false;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+
+        function addDebugLog(message, isError = false) {
+            const log = document.getElementById('debugLog');
+            const p = document.createElement('p');
+            const time = new Date().toLocaleTimeString();
+            p.textContent = `[${time}] ${message}`;
+            p.style.color = isError ? '#fc8181' : '#a0aec0';
+            log.appendChild(p);
+            while (log.children.length > 6) {
+                if (log.children[1]) log.removeChild(log.children[1]);
+            }
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateConnectionStatus(connected) {
+            const card = document.getElementById('statusCard');
+            const icon = document.getElementById('statusIcon');
+            const text = document.getElementById('statusText');
+            
+            isConnected = connected;
+            
+            if (connected) {
+                card.className = 'status-card connected';
+                icon.textContent = '✅';
+                text.className = 'status-text connected';
+                text.textContent = 'Conectado a la API';
+                consecutiveErrors = 0;
+                reconnectAttempts = 0;
+                addDebugLog('✅ Conectado a la API');
+            } else {
+                card.className = 'status-card disconnected';
+                icon.textContent = '❌';
+                text.className = 'status-text disconnected';
+                text.textContent = 'Desconectado de la API';
+                addDebugLog('❌ Desconectado de la API', true);
+            }
+            
+            // Actualizar contador de errores
+            document.getElementById('errorCount').textContent = 
+                connected ? '' : `Errores consecutivos: ${consecutiveErrors}`;
+        }
+
+        function updateTimer() {
+            if (isConnected) {
+                const secondsSinceLastPing = Math.floor((Date.now() - lastPingTime) / 1000);
+                document.getElementById('pingTimer').textContent = secondsSinceLastPing;
+                
+                const timerSpan = document.getElementById('pingTimer');
+                if (secondsSinceLastPing > 4) {
+                    timerSpan.style.color = '#f56565';
+                    timerSpan.style.fontWeight = 'bold';
+                } else {
+                    timerSpan.style.color = '#4a5568';
+                    timerSpan.style.fontWeight = 'normal';
+                }
+            }
+        }
+
+        async function ping() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // Timeout de 3 segundos
+                
+                const response = await fetch(`${API_URL}/ping`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    pingCount++;
+                    lastPingTime = Date.now();
+                    document.getElementById('pingCount').textContent = pingCount;
+                    
+                    if (!isConnected) {
+                        updateConnectionStatus(true);
+                    }
+                    
+                    failedPings = 0;
+                    consecutiveErrors = 0;
+                    addDebugLog(`💓 Ping #${pingCount} - OK`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                failedPings++;
+                consecutiveErrors++;
+                
+                let errorMsg = error.message;
+                if (error.name === 'AbortError') {
+                    errorMsg = 'Timeout';
+                }
+                
+                addDebugLog(`❌ Error ping: ${errorMsg} (${failedPings}/3)`, true);
+                
+                if (failedPings >= 3) {
+                    if (isConnected) {
+                        updateConnectionStatus(false);
+                    }
+                    
+                    // Intentar reconectar si no hay demasiados intentos
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++;
+                        addDebugLog(`🔄 Intento de reconexión ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+                        setTimeout(ping, 1000); // Intentar ping inmediato
+                    }
+                }
+            }
+        }
+
+        async function callAPI(endpoint) {
+            const btn = endpoint.includes('hello') ? 'btnHello' : 'btnTime';
+            const button = document.getElementById(btn);
+            
+            try {
+                button.disabled = true;
+                button.textContent = 'Cargando...';
+                
+                const result = document.getElementById('result');
+                result.textContent = 'Cargando...';
+                
+                addDebugLog(`📡 Llamando a ${endpoint}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+                addDebugLog(`✅ ${endpoint} - ${response.status}`);
+                
+                if (!isConnected) {
+                    updateConnectionStatus(true);
+                }
+                
+            } catch (error) {
+                let errorMsg = error.message;
+                if (error.name === 'AbortError') {
+                    errorMsg = 'Timeout - El servidor no responde';
+                }
+                
+                document.getElementById('result').textContent = 'Error: ' + errorMsg;
+                addDebugLog(`❌ ${endpoint} - Error: ${errorMsg}`, true);
+            } finally {
+                button.disabled = false;
+                button.textContent = endpoint.includes('hello') ? 'GET /api/hello' : 'GET /api/time';
+            }
+        }
+
+        // Verificar conectividad inicial
+        async function checkInitialConnection() {
+            try {
+                addDebugLog('🔄 Verificando conexión inicial...');
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await fetch(`${API_URL}/`, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    addDebugLog('✅ Conexión inicial exitosa');
+                    updateConnectionStatus(true);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                let errorMsg = error.message;
+                if (error.name === 'AbortError') {
+                    errorMsg = 'Timeout';
+                }
+                addDebugLog(`⚠️ Conexión inicial: ${errorMsg}`, true);
+                
+                // Intentar de nuevo en 2 segundos
+                setTimeout(checkInitialConnection, 2000);
+            }
+        }
+
+        // Inicialización
+        window.onload = function() {
+            addDebugLog('🚀 Página cargada');
+            checkInitialConnection();
+            
+            // Iniciar ping cada 2 segundos
+            ping();
+            pingInterval = setInterval(ping, 2000);
+            
+            // Actualizar timer cada segundo
+            setInterval(updateTimer, 1000);
+        };
+
+        // Limpiar al cerrar
+        window.onbeforeunload = function() {
+            if (pingInterval) {
+                clearInterval(pingInterval);
+            }
+            addDebugLog('👋 Página cerrando');
+            
+            // Intentar notificar a la API
+            try {
+                navigator.sendBeacon(`${API_URL}/ping`);
+            } catch(e) {}
+        };
+
+        // Manejar visibilidad
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                addDebugLog('⏸️ Página en segundo plano');
+            } else {
+                addDebugLog('▶️ Página activa nuevamente');
+                // Enviar ping inmediato al volver
+                setTimeout(ping, 100);
+            }
+        });
+    </script>
+</body>
+</html>
